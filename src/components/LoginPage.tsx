@@ -22,16 +22,7 @@ const LoginPage: React.FC = () => {
       if (matricule === 'SCM00123') {
         localStorage.setItem('scm_user_role', 'admin');
         localStorage.setItem('scm_user_id', 'SCM00123');
-        try {
-          await signInAnonymously(auth);
-        } catch (authErr: any) {
-          if (authErr.code === 'auth/admin-restricted-operation') {
-            setError("L'authentification anonyme n'est pas activée dans votre console Firebase. Veuillez l'activer dans l'onglet Authentication > Sign-in method.");
-            setLoading(false);
-            return;
-          }
-          throw authErr;
-        }
+        await signInAnonymously(auth);
         return;
       }
 
@@ -57,9 +48,9 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      setError("Identifiant ou Matricule inconnu.");
+      setError("Matricule ou Identifiant non reconnu.");
     } catch (err: any) {
-      setError("Erreur lors de la connexion. Veuillez réessayer.");
+      setError("Connexion impossible. Vérifiez votre accès.");
       console.error(err);
     } finally {
       setLoading(false);
