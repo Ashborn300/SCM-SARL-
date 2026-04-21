@@ -1,15 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiService } from '../services/apiService';
-import { Employee, Manager, ConstructionSite, AttendanceRecord, Document } from '../types';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, 
+  doc, query, getDocs, writeBatch
+} from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from '../lib/firebase';
+import { Employee, Manager, ConstructionSite, AttendanceRecord, Document as SCMDocument } from '../types';
+import { migrateFromLocalToFirebase } from '../services/migrationService';
 
 interface DataContextType {
   employees: Employee[];
   managers: Manager[];
   sites: ConstructionSite[];
   attendance: AttendanceRecord[];
-  documents: Document[];
+  documents: SCMDocument[];
   loading: boolean;
-  refreshData: () => Promise<void>;
   
   // Mutations
   addEmployee: (emp: Partial<Employee>) => Promise<void>;
@@ -20,7 +25,7 @@ interface DataContextType {
   updateSite: (id: string, site: Partial<ConstructionSite>) => Promise<void>;
   deleteSite: (id: string) => Promise<void>;
   
-  addDocument: (doc: Partial<Document>) => Promise<void>;
+  addDocument: (doc: Partial<SCMDocument>) => Promise<void>;
   saveAttendanceBatch: (records: Partial<AttendanceRecord>[]) => Promise<void>;
 }
 
@@ -31,82 +36,128 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [managers, setManagers] = useState<Manager[]>([]);
   const [sites, setSites] = useState<ConstructionSite[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<SCMDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [empRes, manRes, siteRes, attRes, docRes] = await Promise.all([
-        apiService.getEmployees(),
-        apiService.getManagers(),
-        apiService.getSites(),
-        apiService.getAttendance(),
-        apiService.getDocuments()
-      ]);
-      setEmployees(empRes);
-      setManagers(manRes);
-      setSites(siteRes);
-      setAttendance(attRes);
-      setDocuments(docRes);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    let unsubs: (() => void)[] = [];
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      // Clean up previous listeners if any
+      unsubs.forEach(unsub => unsub());
+      unsubs = [];
+
+      if (user) {
+        // ONLY start listeners if authenticated
+        const unsubEmployees = onSnapshot(collection(db, 'employees'), (snapshot) => {
+          setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee)));
+        });
+
+        const unsubManagers = onSnapshot(collection(db, 'managers'), (snapshot) => {
+          setManagers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Manager)));
+        });
+
+        const unsubSites = onSnapshot(collection(db, 'sites'), (snapshot) => {
+          setSites(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ConstructionSite)));
+        });
+
+        const unsubAttendance = onSnapshot(collection(db, 'attendance'), (snapshot) => {
+          setAttendance(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AttendanceRecord)));
+        });
+
+        const unsubDocuments = onSnapshot(collection(db, 'documents'), (snapshot) => {
+          setDocuments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SCMDocument)));
+          setLoading(false);
+        });
+
+        unsubs = [unsubEmployees, unsubManagers, unsubSites, unsubAttendance, unsubDocuments];
+
+        // Migration check
+        const checkInitialLoad = async () => {
+          try {
+            const snapshots = await Promise.all([
+              getDocs(collection(db, 'employees')),
+              getDocs(collection(db, 'managers')),
+              getDocs(collection(db, 'sites')),
+              getDocs(collection(db, 'attendance')),
+              getDocs(collection(db, 'documents'))
+            ]);
+            
+            const allEmpty = snapshots.every(s => s.empty);
+            if (allEmpty) {
+              const response = await fetch('/db.json');
+              if (response.ok) {
+                const localData = await response.json();
+                await migrateFromLocalToFirebase(localData);
+              }
+            }
+            setLoading(false);
+          } catch (error) {
+            console.error('Error fetching initial Firebase data:', error);
+            setLoading(false);
+          }
+        };
+        checkInitialLoad();
+      } else {
+        // Reset state when logged out
+        setEmployees([]);
+        setManagers([]);
+        setSites([]);
+        setAttendance([]);
+        setDocuments([]);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubs.forEach(unsub => unsub());
+    };
   }, []);
 
-  useEffect(() => {
-    refreshData();
-  }, [refreshData]);
-
   const addEmployee = async (emp: Partial<Employee>) => {
-    await apiService.createEmployee(emp);
-    await refreshData();
+    const docRef = await addDoc(collection(db, 'employees'), emp);
+    await updateDoc(docRef, { id: docRef.id }); // Ensure ID is consistent
   };
 
   const updateEmployee = async (id: string, emp: Partial<Employee>) => {
-    await apiService.updateEmployee(id, emp);
-    await refreshData();
+    await updateDoc(doc(db, 'employees', id), emp);
   };
 
   const deleteEmployee = async (id: string) => {
-    await apiService.deleteEmployee(id);
-    await refreshData();
+    await deleteDoc(doc(db, 'employees', id));
   };
 
   const addSite = async (site: Partial<ConstructionSite>) => {
-    await apiService.createSite(site);
-    await refreshData();
+    const docRef = await addDoc(collection(db, 'sites'), site);
+    await updateDoc(docRef, { id: docRef.id });
   };
 
   const updateSite = async (id: string, site: Partial<ConstructionSite>) => {
-    await apiService.updateSite(id, site);
-    await refreshData();
+    await updateDoc(doc(db, 'sites', id), site);
   };
 
   const deleteSite = async (id: string) => {
-    await apiService.deleteSite(id);
-    await refreshData();
+    await deleteDoc(doc(db, 'sites', id));
   };
 
-  const addDocument = async (doc: Partial<Document>) => {
-    await apiService.createDocument(doc);
-    await refreshData();
+  const addDocument = async (docData: Partial<SCMDocument>) => {
+    const docRef = await addDoc(collection(db, 'documents'), docData);
+    await updateDoc(docRef, { id: docRef.id });
   };
 
   const saveAttendanceBatch = async (records: Partial<AttendanceRecord>[]) => {
-    // Current server helper only does 1 by 1 in this simple setup
-    // But we can loop or add a batch endpoint. For now, 1 by 1 or sequential is fine for this demo.
+    const batch = writeBatch(db);
     for (const record of records) {
-      await apiService.saveAttendance(record);
+      const docRef = doc(collection(db, 'attendance'));
+      batch.set(docRef, { ...record, id: docRef.id });
     }
-    await refreshData();
+    await batch.commit();
   };
 
   return (
     <DataContext.Provider value={{
-      employees, managers, sites, attendance, documents, loading, refreshData,
+      employees, managers, sites, attendance, documents, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addSite, updateSite, deleteSite,
       addDocument, saveAttendanceBatch

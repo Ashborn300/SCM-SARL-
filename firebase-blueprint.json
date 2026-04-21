@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "A construction worker profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "fullName": { "type": "string" },
+        "age": { "type": "number" },
+        "address": { "type": "string" },
+        "gender": { "type": "string", "enum": ["M", "F"] },
+        "photo": { "type": "string" },
+        "position": { "type": "string" },
+        "salaryTotal": { "type": "number" },
+        "salaryPaid": { "type": "number" },
+        "assignedSiteId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] }
+      }
+    },
+    "Manager": {
+      "title": "Manager",
+      "description": "A construction site manager profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "fullName": { "type": "string" },
+        "age": { "type": "number" },
+        "address": { "type": "string" },
+        "gender": { "type": "string", "enum": ["M", "F"] },
+        "photo": { "type": "string" },
+        "phone": { "type": "string" },
+        "assignedSiteId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] }
+      }
+    },
+    "ConstructionSite": {
+      "title": "ConstructionSite",
+      "description": "Details of a construction project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "budget": { "type": "number" },
+        "status": { "type": "string", "enum": ["ongoing", "finished", "suspended"] },
+        "managerId": { "type": "string" },
+        "employeeIds": { "type": "array", "items": { "type": "string" } },
+        "advancement": { "type": "number" }
+      }
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Daily attendance log for an employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "siteId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "present": { "type": "boolean" },
+        "remark": { "type": "string" }
+      }
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Financial or administrative document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["invoice", "quote", "receipt", "employee_sheet", "report"] },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "amount": { "type": "number" },
+        "clientName": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "final"] }
+      }
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "List of workers"
+    },
+    "/managers/{managerId}": {
+      "schema": "Manager",
+      "description": "Active site managers"
+    },
+    "/sites/{siteId}": {
+      "schema": "ConstructionSite",
+      "description": "Active and finished projects"
+    },
+    "/attendance/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Daily logs"
+    },
+    "/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Invoices and quotes"
+    }
+  }
+}

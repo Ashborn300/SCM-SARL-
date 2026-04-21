@@ -1,21 +1,68 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { HardHat, Lock, AlertCircle } from 'lucide-react';
+import { HardHat, AlertCircle, User, Lock } from 'lucide-react';
+import { signInAnonymously } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
-interface LoginPageProps {
-  onLogin: (id: string) => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [id, setId] = useState('');
+const LoginPage: React.FC = () => {
+  const [matricule, setMatricule] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!matricule.trim()) return;
+
+    setLoading(true);
+    setError('');
+
     try {
-      onLogin(id);
+      // 1. Admin special check
+      if (matricule === 'SCM00123') {
+        localStorage.setItem('scm_user_role', 'admin');
+        localStorage.setItem('scm_user_id', 'SCM00123');
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr: any) {
+          if (authErr.code === 'auth/admin-restricted-operation') {
+            setError("L'authentification anonyme n'est pas activée dans votre console Firebase. Veuillez l'activer dans l'onglet Authentication > Sign-in method.");
+            setLoading(false);
+            return;
+          }
+          throw authErr;
+        }
+        return;
+      }
+
+      // 2. Check in employees collection
+      const empQuery = query(collection(db, 'employees'), where('id', '==', matricule));
+      const empSnapshot = await getDocs(empQuery);
+
+      if (!empSnapshot.empty) {
+        localStorage.setItem('scm_user_role', 'employee');
+        localStorage.setItem('scm_user_id', matricule);
+        await signInAnonymously(auth);
+        return;
+      }
+
+      // 3. Check in managers collection
+      const manQuery = query(collection(db, 'managers'), where('id', '==', matricule));
+      const manSnapshot = await getDocs(manQuery);
+
+      if (!manSnapshot.empty) {
+        localStorage.setItem('scm_user_role', 'manager');
+        localStorage.setItem('scm_user_id', matricule);
+        await signInAnonymously(auth);
+        return;
+      }
+
+      setError("Identifiant ou Matricule inconnu.");
     } catch (err: any) {
-      setError(err.message);
+      setError("Erreur lors de la connexion. Veuillez réessayer.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,7 +90,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <div className="p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-lg font-bold text-slate-800">Portail Sécurisé</h2>
+            <p className="text-xs text-slate-500">Saisissez votre matricule ou identifiant admin pour continuer.</p>
+          </div>
+
           {error && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
@@ -55,51 +107,43 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </motion.div>
           )}
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Matricule d'Accès</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                value={id}
-                onChange={(e) => {
-                  setId(e.target.value);
-                  setError('');
-                }}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none transition text-sm bg-slate-50 shadow-inner"
-                placeholder="Ex: SCM00123"
-                required
-              />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Matricule / Identifiant</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={matricule}
+                  onChange={(e) => setMatricule(e.target.value.toUpperCase())}
+                  placeholder="EX: SCM-E001"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300 uppercase"
+                />
+                <User size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+              </div>
             </div>
-          </div>
 
-          <button 
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] uppercase text-xs tracking-widest"
-          >
-            Se Connecter au Portail
-          </button>
+            <button 
+              type="submit"
+              disabled={loading || !matricule.trim()}
+              className="w-full flex items-center justify-center space-x-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-blue-500/25 active:scale-[0.98] text-xs tracking-widest uppercase disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Lock size={16} />
+                  <span>Se Connecter</span>
+                </>
+              )}
+            </button>
+          </form>
 
-          <div className="space-y-4 pt-4 border-t border-slate-100">
-            <p className="text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-              Comptes de Démo
+          <div className="pt-4 text-center">
+            <p className="text-[10px] text-slate-400 font-medium">
+              L'accès est restreint au personnel autorisé de S.C.M SARL.
             </p>
-            <div className="grid grid-cols-1 gap-2">
-              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 group cursor-pointer hover:border-blue-300 transition-colors" onClick={() => setId('SCM00123')}>
-                <span className="text-[10px] font-bold text-slate-600 uppercase">Admin</span>
-                <span className="text-[10px] font-mono text-blue-600 font-bold group-hover:scale-110 transition-transform">SCM00123</span>
-              </div>
-              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 group cursor-pointer hover:border-blue-300 transition-colors" onClick={() => setId('SCM-M001')}>
-                <span className="text-[10px] font-bold text-slate-600 uppercase">Manager</span>
-                <span className="text-[10px] font-mono text-blue-600 font-bold group-hover:scale-110 transition-transform">SCM-M001</span>
-              </div>
-              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 group cursor-pointer hover:border-blue-300 transition-colors" onClick={() => setId('SCM-E001')}>
-                <span className="text-[10px] font-bold text-slate-600 uppercase">Employé</span>
-                <span className="text-[10px] font-mono text-blue-600 font-bold group-hover:scale-110 transition-transform">SCM-E001</span>
-              </div>
-            </div>
           </div>
-        </form>
+        </div>
         
         <div className="bg-slate-50 p-4 text-center border-t border-slate-200">
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">

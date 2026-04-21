@@ -1,0 +1,166 @@
+{
+  "employees": [
+    {
+      "id": "SCM-E002",
+      "name": "Marie",
+      "fullName": "Marie Kalala",
+      "age": 28,
+      "address": "Gombe, Kinshasa",
+      "gender": "F",
+      "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+      "position": "Électricienne",
+      "salaryTotal": 1500,
+      "salaryPaid": 1500,
+      "assignedSiteId": "SITE-002",
+      "status": "active"
+    },
+    {
+      "id": "SCM-E003",
+      "name": "Pierre",
+      "fullName": "Pierre Malu",
+      "age": 42,
+      "address": "Limete, Kinshasa",
+      "gender": "M",
+      "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
+      "position": "Charpentier",
+      "salaryTotal": 1100,
+      "salaryPaid": 400,
+      "assignedSiteId": "SITE-001",
+      "status": "active"
+    },
+    {
+      "fullName": "John",
+      "position": "Maçon ",
+      "age": 25,
+      "address": "Kinshasa Gombe ",
+      "salaryTotal": 250,
+      "assignedSiteId": "",
+      "photo": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAUFBQUFBQUGBgUICAcICAsKCQkKCxEMDQwNDBEaEBMQEBMQGhcbFhUWGxcpIBwcICkvJyUnLzkzMzlHREddXX0BBQUFBQUFBQYGBQgIBwgICwoJCQoLEQwNDA0MERoQExAQExAaFxsWFRYbFykgHBwgKS8nJScvOTMzOUdER11dff/CABEIAtgBmAMBIgACEQEDEQH/xAA2AAACAgMBAQEAAAAAAAAAAAADBAIFAAEGBwgJAQACAwEBAQAAAAAAAAAAAAACAwABBAUGB//aAAwDAQACEAMQAAAARxYysDm8YG42K1gEuLLdil130PN9YGmGrCEKviavIEYDgeWzv+LsAdfyotg7o9IM0ypqrYJITV6qhJVSI3OOydZ8h+x+bM0cPXX9PomgnwxTu6l6D9K9l8dO5m+3/Pt5VsHovoTwH6KVXn3oXyfhX9HeD9D5Nd96hzVoyug59iNhPK/LL1yQdKVYPI9GqxXNdfJZrrKHpFOas02ge87z+GFjXBCaGYMBkRkuA0NMV4ZOof5CwB9ysoISs67SxrF8m/WXgDg4BvKlr9VcqplM2HO2ZCy7zrthdRq3BJrKqFjZXFLGQ2y7q4cXu3h1tjI8hKvp6mDmV2XX0MLuXueXn/VnMNlN0KCXu9JX9Ct2AtFTKoDYrGhGLQWIxYgCWoNkJr0uwvYxZUnKsS+WJ2fsnz57P8tRnrXBc86bg1HQccUmm0Ar2sUEg5stSJaYyVUEYCY3QUayV2B+eqrGyu6idX0m0YjbQWckqMdwg+6p3ouD1ee4b1mBDUMXDlznmOgkVVkrXTBp0r5GroVravJCEDBYgSrYrBSDMbFSZJXXxt6Tw1/rP2TxXrOSzv5O45pnQCQLJCFtpvskP5Na0riDeiMyUmM2JDTKXArqmj0C5BS5bauqgxQXbNY4SppJsFxnF8lfpttO/wCJ0amNovc3iKNS+Lyb5VfQVMdaTLWwR1hq40RXGBmY41xEJ4q5dM4uST5fTyWlqlzQLQwoWKZjlzq6Q9LpedWQ92r6KgYld9NkxqbKraKOrMgCTgQJgsZVowJF4NSnYPG4NPolausy4y5929N5zb8LpX3PVPOMTfD5qTs10SqPc76+846AH29XzVoQTqpoNyYLUDDI7jcyUZS5SHKT5yprKr0sqUrJM4pdp9Up0TGBn0BGtbVYef63jyWbQ9NWNZsZCScTCRYDXsVtmk1YmIMja2yQqFHmSzYrlz7O1R65Gt6t2uxMpLbchuakrXYXXON0V3iliJrLMQNYcPlRaLYZa+MwkDImpPBPMvrf5u2Vy2GtzadyUM7mEZoiUiBnRXvHdvyFQCxxuRvB6uOQGxVj2SEgtzSfna2LFsjuehMgSDIQYHDH64rd1fNOz1UtMS4QE4JlzwIXmkC1dw3UMgyxIo/JhNs1a8LGVHWzsDUVMv0K8ugO7uD8pI9NQ6mDiOJ01UXAAZSHZpCHu+T6qmQfO4YuvMCEiVYDrzllloQ2VXS7AayvckYIowB5LQLFfDY1f0og3Xc+zMqnIGtgKJGrLWqIbdpNiA62g4Lbi5qOhWxdh4sNLbuUahGcogxZyrS2/lj8y+ae0eNawwqVqdSrmqwTSjI111dM/DM7nQkzXmktsVECbKkhh7cId1N0jKobZZ67kDeVDgk9IjmYQfR6z4MNqEJIgiyKthXRKh61GKjKxsC1phO56rhr1bfQk99UvXQOs6KltmDVrMaBKYgIRL8b8Z9+8IcVK5XyerWmWltgnac6JXdqpY528QOa+3IQUjUQ61/JYWYygnVOldZvUiFRzUrgoCZqFwOUX0dmayAOco2ObFqXsI1iCe1NnAXSJhu8uaHpc+j1W5rri2hXdXYCwHlgJRWwEMWGfcryrwf6R+e2Fz6tmloURscVtWLo9Wt03MdjnbwaUc25NEGeiCxEy3EVcgNoAdg7MlCc2AHJTuRXPqQeayj+johzKspQEkkmyCrSWYTK94IhCS0QtFnaWw7HJqvPSfN+4hWytYZ6mYg1ISEJSo5PLDj/AJj+sfkwypdALoAkAjsXW6uan2ViBnLo5RWzrNeXel2JebBkjWCYA1wTG1QRzKa1i71KdQlqiHksl/QOszKE5C3CJXsRqxgMEoGRC3W31DgVx0PH3GbT2nT8RZId0TlYy9LuVFmQzJTXbAHqYpSnyH9j/IhWCt0voGucDbmukt5CQ8HUUdsjRR8/09FpzVpJMFSkmoiY31pjYV7erIAbljFjiTLrIbHRjzMl+97XPnVCZJC0W96qxDll0U0WgPTOnwNGd4mBHWm1V1/e8Vb1OqZ52wGXblM00LDFMMGfln6c+aSvjZm3pCksNrSwWtNZgTdtUKKa/wA31XNmtJiBTpgSZQNrYRS5KGGxQdTiYaAZiiReHb5ehzOXOXXq5REbyjThIS3lUMTtNHnV4zjYGFmNEB+lOqX6Do1O15I6p6+dvd0PXea+s1di1VqhXRyWcaEPnT6O8FZXAltKlt1tPcc81V1dV1ih6LLToHXc16F50QwgNp6hDJCQzCzAlBRsdxAb4oQyG6vD1eWBZc5DfwOMH2cu9a/Nz3iAkUvEehUQWtMrM1yDulM4vyL3n5b0J+mb6iusj2OftWZVOZh6jXYqyVdyxWcuY9818x+66E815jNC7rwWWgfRcr3HFaU9oah6DNosQp2aHF4X0Pz24gEpdeYMTZIuYdwDEb/q77xfueL5jpKDUxFZQHo/ItU5UteI+L4xX0THWl45SjKpoxCKdpuR1sue08u9JgVvy9734J0Mf0N1Xi0MzvT/ADo3lLg+h+fPTpPyf2vxX1jQHs3y77v4jmdy/wM/O9DpX6dV11tl1JuxdRppOe7erKqbqFHAOpdobWS+5Xp+fW7kJNobsTUFm6MJojles9X4V0/z76B6PxvsXlHK0+UV/Tc99L8Ygq8HoclfLvE6/aCUXZTk1krDYGKzx5bBzsjDSl4xYGv584nseF6eQS5BvV6nwNe+ljqrcBMALXUnO3UlAbbV065T+igmms7jsPHL1L/AEqjrDJa+j55W6s/rbFG9k02vOXPM0dYg0PblCxHZDkXrrHuB6eFf579AvPP+s6HBfldF7T5t28PmLVj753eL83Z9F5yNnmvqtlH2Hjamc2bGNpq6oULKSxqZE5Ax8R4T0TzvfnqwHC9LBdsgcLCrMJM7gFbaVbv+LOU06CxJxK8XVS6rpON77M/qvHrPgGZ9XALvUqy7fjegxaOnr+OoUausFRdMYrSloYxYVzfM7X0XyffeZ/NvUHqH039Xl+L9P4T0/G572zgvdUc7zXPUM8/0LM9iH6J4OoUt0DFVPpKxqu74DtxNSyHSKH+U+W+leX9PEmA0dCWNl2Btvps532XKXPK2ftVBccm/m0PMdZ5+xnMdly0jfO4pExP0XgXUgIN/W3Jquxi4ZT4LAjrxs2VMUXek23knrHM6Z7Fj0PyXrPUa6ypfLBWc1ClT6ddjnqP0nN97D4D1+TJ9GZfYfmK2fk3U+15StXSWrQ6dGioiH1u38p6lZdbWcPwZU7wF5RbELLMLsBwipxJ+zUYzaLLzxrkm17Dz3Lg0Yyc9BHQB9Mpi2yrJ7kK/W9MahBsDwaVa6FCo3mlM+3GKboBarXb2vs/Slx439FfJvYYbxz1VfK4sdjFHqOd4b6G5/rcHwTt9e3djnd9nA5w9fhlxzW/pvhbSoJTSXtnyk3Ze+5inLIVpAd28i4ICptOhZU57MBNWNeRDqzzX17yXSkGFPpQqYNPceXPGmE2NFuW16am7QDpXe19GxaPn8N3Q23kl+kq9Ep2YFmw19z4UdnoOp5NzFs9ureNuvJ6/ahqUvmN/Y9X4J6bA6hDralvE8Fz0rH9zyUJofT/AJrWIXYjXWFuK+xFpmVxNWyhRAnCQMVG0K5FleVW02m4pmcn2mhPwpH0LlOngoeshQsUce1ruwgk/Ydb7T4dYc/Z9Gct4oOh6hXiSMu+BUuw06Dt64w5C0BEumC4FXBstb+opgD6C9p+MfqTxPW4O+EHJ2u5H4PZa+H69ni+Yt9wdiy9/wCArW0btOixpXqxDqSdnvTmqNPrUShQtQqghOmToqa/1rm+T1+YepLvrccyFkstlP5B7qi1fha1ir2uMsaMSqHRVFoJW94iaqLX4nY4o2G6QDZ6KVlsmJTeg4OyroywWFaK78ZU3RRdN6f5wBaPo3rPHem4HS4p+r6HscU2UOSejWixqQiW75ZGq7VbOpiMHrLPq5ap7OfP7HlfQcx1vb4s+iobLnavXKu/v/KdH5iP0yXo8NGFt/pYkfVeM9S4HW+VfNfrH559Dx+BafT9Bw0+z5HtahTgPVKrvVxKiAEihRGhIKvdrKMYTju1yLRDovBsakNtzUW64lYX/A9asc9a8nYnKbyxzLt9Db5kx5On5xQ63dHb0Zsum8sacXG79L6Hw1pwu14p2KvWez8zUdn516Tz3dJ6J4Z1fMGm5Vio6+frrnjvTcW1zhlgbOeQfPK5Nvi81je68a5biqkabfq/L3ou7r01Grdmue4HU1yXAc4S6cLaRVhE3x1M4lbI7NXb1xLQqU6xJ6clB0sy+6ZyOcx1Yl0qWhVF6Z5OrC9SY8x3YenXnlt/xO+p2vKLZtt1DzRn1Hj/AEDpfJFsHR6rr/L0RO+Q5/qdeQXpfkTIH09FzxdvM9F5bmPZMPU8GqfQPOuhhu+j5LuEaarqeDwXdlyJ7tmLz8Hq3PHXIO2/PGF0tzzJiqs2sYDZXlRNC3AdDhIFT1NLnyQLtW+Wbo8qcmPtFuUnaLKqsK2m2wqSN11UFRAdm/U9GF8YVODlWjmuvz6ODPY1Tkb7LiRVPbPD+/4xbEEsHqz9Nd8rfqZa+b29aJjdh6BR8xUPL2NMDogaMlIeaUu5a5kIs7Wo59uUxXWVcY5mbsWtpvL6E7Sms8/dAydENtdlxSv4L2VuHj6S19Vp65/F1+6llEUXsbu/6TlPVsWzXmn0FAA+VJW9DvR1vceZWeTq33RVHUKz+U9HTX+rHTqYi0K9YwoTtzSXQMWqHK4ghdg9szavGjdBQasate+vdJiOUpVBajIjm8kzLSsE8IFi6A2EgsxtKQb+jCpa4Pb1Q7FDRxarG80cD1yuveBLjwqI9PbOP31wgcG0Bx4N9D6byvrxrn671I0rxVroujvWTl6S0vJV3HIQZXQ935nb3n6TnrnnYNlXhsl6aJC9dIeyveSpOZ12atnntmOyrtR0ZBrniYIxIvdZHe5Nb1khWE9ie4yGQkJPQNZs6drP6K1prSvXtUxvNXnDiYpj5+uk56xldKXnjpe0ub0K5zXd8p59FdXX0gK19vyKkCX6zXPeZKoB6x/QDO5p0D4F8IS3Vf2yNPLqRsrBfemWrqDV7C3NUNtWWMMjIhgoQZr1vJSC3mXUs1OXDWySZrY6jLiJ1dCyZrC5vVN5LAatW9Zz3Q8AEgm5dpbSkE6jhueDcHsO2UfBRqDZAxLbU1KoFh7KgwHHIPUm7rqOhjXc7p19C/zWnNct8vavzv1lzX2NatPKNaMD3QIMW4nz8jYa1s3q17lDcImHHRDgeEqLKhaN46R0dw+bxXZ9BsPLy6/CnyjMRFsEH6lWFwENfHkyDUd7k1kZyb3mxZ2vKLWwxF1K+JYrVNADuqLruFVo2kzJ+fF1J0dkNCBpKCGpJvaPV19kLYO2gzogQwkyEZ9Dkg3rdjgZRkBFheqYOk0GxvF8DpnLBJ3Ciwua6twjYqkAlhTLyurmZFzbhYinosIBIZVG7TligXQUPX0imc16nXzNPG11zVHasx6KojMvJDRIWOPsdFRApzp1UMlhisuYFHuRIi0cpEsGQmDVZGUJCJGXIYniOEzm8DVOWmyQqxGYkzhFzzhFIwuSg4GFomi0S2E0ShElaWuuv3Ukv0k5zon01MhpqMgMRrYgGcm8Y1LX62t7tbKuuvaSDThsqYiyJa6M3twQuIBmNNk2FURsKxxi0Vpx6IBrmAzNPWTpo8Hli5Y17tXKWFDQvXWlcVY+iwzFdVLkl6UWV7EDRy+HFYyHS3PVtMsUbfobQhpNk6BiOYD2VHYtW1IuJlEMZV2lrxNmhskaq5Jo6tyvX0F3MtYzFLhPJ6dFSWtvkWE3j1dO6PTObgmkYUBFE3LNpRkHAxnI7TyT157uordmue4HU1yXAc4S6cLaRVhE3x1M4lbI7NXb1xLQqU6xJ6clB0sy+6ZyOcx1Yl0qWhVF6Z5OrC9SY8x3YenXnlt/xO+p2vKLZtt1DzRn1Hj/AEDpfJFsHR6rr/L0RO+Q5/qdeQXpfkTIH09FzxdvM9F5bmPZMPU8GqfQPOuhhu+j5LuEaarqeDwXdlyJ7tmLz8Hq3PHXIO2/PGF0tzzJiqs2sYDZXlRNC3AdDhIFT1NLnyQLtW+Wbo8qcmPtFuUnaLKqsK2m2wqSN11UFRAdm/U9GF8YVODlWjmuvz6ODPY1Tkb7LiRVPbPD+/4xbEEsHqz9Nd8rfqZa+b29aJjdh6BR8xUPL2NMDogaMlIeaUu5a5kIs7Wo59uUxXWVcY5mbsWtpvL6E7Sms8/dAydENtdlxSv4L2VuHj6S19Vp65/F1+6llEUXsbu/6TlPVsWzXmn0FAA+VJW9DvR1vceZWeTq33RVHUKz+U9HTX+rHTqYi0K9YwoTtzSXQMWqHK4ghdg9szavGjdBQasate+vdJiOUpVBajIjm8kzLSsE8IFi6A2EgsxtKQb+jCpa4Pb1Q7FDRxarG80cD1yuveBLjwqI9PbOP31wgcG0Bx4N9D6byvrxrn671I0rxVroujvWTl6S0vJV3HIQZXQ935nb3n6TnrnnYNlXhsl6aJC9dIeyveSpOZ12atnntmOyrtR0ZBrniYIxIvdZHe5Nb1khWE9ie4yGQkJPQNZs6drP6K1prSvXtUxvNXnDiYpj5+uk56xldKXnjpe0ub0K5zXd8p59FdXX0gK19vyKkCX6zXPeZKoB6x/QDO5p0D4F8IS3Vf2yNPLqRsrBfemWrqDV7C3NUNtWWMMjIhgoQZr1vJSC3mXUs1OXDWySZrY6jLiJ1dCyZrC5vVN5LAatW9Zz3Q8AEgm5dpbSkE6jhueDcHsO2UfBRqDZAxLbU1KoFh7KgwHHIPUm7rqOhjXc7p19C/zWnNct8vavzv1lzX2NatPKNaMD3QIMW4nz8jYa1s3q17lDcImHHRDgeEqLKhaN46R0dw+bxXZ9BsPLy6/CnyjMRFsEH6lWFwENfHkyDUd7k1kZyb3mxZ2vKLWwxF1K+JYrVNADuqLruFVo2kzJ+fF1J0dkNCBpKCGpJvaPV19kLYO2gzogQwkyEZ9Dkg3rdjgZRkBFheqYOk0GxvF8DpnLBJ3Ciwua6twjYqkAlhTLyurmZFzbhYinosIBIZVG7TligXQUPX0imc16nXzNPG11zVHasx6KojMvJDRIWOPsdFRApzp1UMlhisuYFHuRIi0cpEsGQmDVZGUJCJGXIYniOEzm8DVOWmyQqxGYkzhFzzhFIwuSg4GFomi0S2E0ShElaWuuv3Ukv0k5zon01MhpqMgMRrYgGcm8Y1LX62t7tbKuuvaSDThsqYiyJa6M3twQuIBmNNk2FURsKxxi0Vpx6IBrmAzNPWTpo8Hli5Y17tXKWFDQvXWlcVY+iwzFdVLkl6UWV7EDRy+HFYyHS3PVtMsUbfobQhpNk6BiOYD2VHYtW1IuJlEMZV2lrxNmhskaq5Jo6tyvX0F3MtYzFLhPJ6dFSWtvkWE3j1dO6PTObgmkYUBFE3LNpRkHAxnI7TyT157uordmue4HU1yXAc4S6cLaRVhE3x1M4lbI7NXb1xLQqU6xJ6clB0sy+6ZyOcx1Yl0qWhVF6Z5OrC9SY8x3YenXnlt/xO+p2vKLZtt1DzRn1Hj/AEDpfJFsHR6rr/L0RO+Q5/qdeQXpfkTIH09FzxdvM9F5bmPZMPU8GqfQPOuhhu+j5LuEaarqeDwXdlyJ7tmLz8Hq3PHXIO2/PGF0tzzJiqs2sYDZXlRNC3AdDhIFT1NLnyQLtW+Wbo8qcmPtFuUnaLKqsK2m2wqSN11UFRAdm/U9GF8YVODlWjmuvz6ODPY1Tkb7LiRVPbPD+/4xbEEsHqz9Nd8rfqZa+b29aJjdh6BR8xUPL2NMDogaMlIeaUu5a5kIs7Wo59uUxXWVcY5mbsWtpvL6E7Sms8/dAydENtdlxSv4L2VuHj6S19Vp65/F1+6llEUXsbu/6TlPVsWzXmn0FAA+VJW9DvR1vceZWeTq33RVHUKz+U9HTX+rHTqYi0K9YwoTtzSXQMWqHK4ghdg9szavGjdBQasate+vdJiOUpVBajIjm8kzLSsE8IFi6A2EgsxtKQb+jCpa4Pb1Q7FDRxarG80cD1yuveBLjwqI9PbOP31wgcG0Bx4N9D6byvrxrn671I0rxVroujvWTl6S0vJV3HIQZXQ935nb3n6TnrnnYNlXhsl6aJC9dIeyveSpOZ12atnntmOyrtR0ZBrniYIxIvdZHe5Nb1khWE9ie4yGQkJPQNZs6drP6K1prSvXtUxvNXnDiYpj5+uk56xldKXnjpe0ub0K5zXd8p59FdXX0gK19vyKkCX6zXPeZKoB6x/QDO5p0D4F8IS3Vf2yNPLqRsrBfemWrqDV7C3NUNtWWMMjIhgoQZr1vJSC3mXUs1OXDWySZrY6jLiJ1dCyZrC5vVN5LAatW9Zz3Q8AEgm5dpbSkE6jhueDcHsO2UfBRqDZAxLbU1KoFh7KgwHHIPUm7rqOhjXc7p19C/zWnNct8vavzv1lzX2NatPKNaMD3QIMW4nz8jYa1s3q17lDcImHHRDgeEqLKhaN46R0dw+bxXZ9BsPLy6/CnyjMRFsEH6lWFwENfHkyDUd7k1kZyb3mxZ2vKLWwxF1K+JYrVNADuqLruFVo2kzJ+fF1J0dkNCBpKCGpJvaPV19kLYO2gzogQwkyEZ9Dkg3rdjgZRkBFheqYOk0GxvF8DpnLBJ3Ciwua6twjYqkAlhTLyurmZFzbhYinosIBIZVG7TligXQUPX0imc16nXzNPG11zVHasx6KojMvJDRIWOPsdFRApzp1UMlhisuYFHuRIi0cpEsGQmDVZGUJCJGXIYniOEzm8DVOWmyQqxGYkzhFzzhFIwuSg4GFomi0S2E0ShElaWuuv3Ukv0k5zon01MhpqMgMRrYgGcm8Y1LX62t7tbKuuvaSDThsqYiyJa6M3twQuIBmNNk2FURsKxxi0Vpx6IBrmAzNPWTpo8Hli5Y17tXKWFDQvXWlcVY+iwzFdVLkl6UWV7EDRy+HFYyHS3PVtMsUbfobQhpNk6BiOYD2VHYtW1IuJlEMZV2lrxNmhskaq5Jo6tyvX0F3MtYzFLhPJ6dFSWtvkWE3j1dO6PTObgmkYUBFE3LNpRkHAxnI7TyT157uordmue4HU1yXAc4S6cLaRVhE3x1M4lbI7NXb1xLQqU6xJ6clB0sy+6ZyOcx1Yl0qWhVF6Z5OrC9SY8x3YenXnlt/xO+p2vKLZtt1DzRn1Hj/AEDpfJFsHR6rr/L0RO+Q5/qdeQXpfkTIH09FzxdvM9F5bmPZMPU8GqfQPOuhhu+j5LuEaarqeDwXdlyJ7tmLz8Hq3PHXIO2/PGF0tzzJiqs2sYDZXlRNC3AdDhIFT1NLnyQLtW+Wbo8qcmPtFuUnaLKqsK2m2wqSN11UFRAdm/U9GF8YVODlWjmuvz6ODPY1Tkb7LiRVPbPD+/4xbEEsHqz9Nd8rfqZa+b29aJjdh6BR8xUPL2NMDogaMlIeaUu5a5kIs7Wo59uUxXWVcY5mbsWtpvL6E7Sms8/dAydENtdlxSv4L2VuHj6S19Vp65/F1+6llEUXsbu/6TlPVsWzXmn0FAA+VJW9DvR1vceZWeTq33RVHUKz+U9HTX+rHTqYi0K9YwoTtzSXQMWqHK4ghdg9szavGjdBQasate+vdJiOUpVBajIjm8kzLSsE8IFi6A2EgsxtKQb+jCpa4Pb1Q7FDRxarG80cD1yuveBLjwqI9PbOP31wgcG0Bx4N9D6byvrxrn671I0rxVroujvWTl6S0vJV3HIQZXQ935nb3n6TnrnnYNlXhsl6aJC9dIeyveSpOZ12atnntmOyrtR0ZBrniYIxIvdZHe5Nb1khWE9ie4yGQkJPQNZs6drP6K1prSvXtUxvNXnDiYpj5+uk56xldKXnjpe0ub0K5zXd8p59FdXX0gK19vyKkCX6zXPeZKoB6x/QDO5p0D4F8IS3Vf2yNPLqRsrBfemWrqDV7C3NUNtWWMMjIhgoQZr1vJSC3mXUs1OXDWySZrY6jLiJ1dCyZrC5vVN5LAatW9Zz3Q8AEgm5dpbSkE6jhueDcHsO2UfBRqDZAxLbU1KoFh7KgwHHIPUm7rqOhjXc7p19C/zWnNct8vavzv1lzX2NatPKNaMD3QIMW4nz8jYa1s3q17lDcImHHRDgeEqLKhaN46R0dw+bxXZ9BsPLy6/CnyjMRFsEH6lWFwENfHkyDUd7k1kZyb3mxZ2vKLWwxF1K+JYrVNADuqLruFVo2kzJ+fF1J0dkNCBpKCGpJvaPV19kLYO2gzogQwkyEZ9Dkg3rdjgZRkBFheqYOk0GxvF8DpnLBJ3Ciwua6twjYqkAlhTLyurmZFzbhYinosIBIZVG7TligXQUPX0imc16nXzNPG11zVHasx6KojMvJDRIWOPsdFRApzp1UMlhisuYFHuRIi0cpEsGQmDVZGUJCJGXIYniOEzm8DVOWmyQqxGYkzhFzzhFIwuSg4GFomi0S2E0ShElaWuuv3Ukv0k5zon01MhpqMgMRrYgGcm8Y1LX62t7tbKuuvaSDThsqYiyJa6M3twQuIBmNNk2FURsKxxi0Vpx6IBrmAzNPWTpo8Hli5Y17tXKWFDQvXWlcVY+iwzFdVLkl6UWV7EDRy+HFYyHS3PVtMsUbfobQhpNk6BiOYD2VHYtW1IuJlEMZV2lrxNmhskaq5Jo6tyvX0F3MtYzFLhPJ6dFSWtvkWE3j1dO6PTObgmkYUBFE3LNpRkHAxnI7TyT157uordmue4HU1yXAc4S6cLaRVhE3x1M4lbI7NXb1xLQqU6xJ6clB0sy+6ZyOcx1Yl0qWhVF6Z5OrC9SY8x3YenXnlt/o",
+      "salaryPaid": 0,
+      "status": "active",
+      "gender": "M",
+      "name": "John",
+      "id": "E-1776768522851"
+    }
+  ],
+  "managers": [
+    {
+      "id": "SCM-M001",
+      "name": "Robert",
+      "fullName": "Robert Nkolo",
+      "age": 45,
+      "address": "Ngaliema, Kinshasa",
+      "gender": "M",
+      "photo": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop",
+      "phone": "+243 81 234 5678",
+      "assignedSiteId": "SITE-001",
+      "status": "active"
+    },
+    {
+      "id": "SCM-M002",
+      "name": "Alice",
+      "fullName": "Alice Mbombo",
+      "age": 38,
+      "address": "Bandal, Kinshasa",
+      "gender": "F",
+      "photo": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop",
+      "phone": "+243 82 987 6543",
+      "assignedSiteId": "SITE-002",
+      "status": "active"
+    }
+  ],
+  "sites": [
+    {
+      "id": "SITE-001",
+      "code": "VILLA-HZ",
+      "name": "Villa Horizon",
+      "location": "Ma Campagne, Kinshasa",
+      "description": "Construction d'une villa de luxe avec piscine.",
+      "startDate": "2024-01-15",
+      "endDate": "2024-12-20",
+      "budget": 250000,
+      "status": "ongoing",
+      "managerId": "SCM-M001",
+      "employeeIds": [
+        "SCM-E001",
+        "SCM-E003"
+      ],
+      "advancement": 45
+    },
+    {
+      "id": "SITE-002",
+      "code": "IMMO-SKY",
+      "name": "Immeuble Sky",
+      "location": "Gombe, Kinshasa",
+      "description": "Immeuble de bureaux de 10 étages.",
+      "startDate": "2023-08-01",
+      "endDate": "2025-02-15",
+      "budget": 1200000,
+      "status": "ongoing",
+      "managerId": "SCM-M002",
+      "employeeIds": [
+        "SCM-E002"
+      ],
+      "advancement": 65
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-1",
+      "date": "2024-04-20",
+      "siteId": "SITE-001",
+      "employeeId": "SCM-E001",
+      "present": true
+    },
+    {
+      "id": "att-2",
+      "date": "2024-04-20",
+      "siteId": "SITE-001",
+      "employeeId": "SCM-E003",
+      "present": true
+    },
+    {
+      "id": "att-3",
+      "date": "2024-04-20",
+      "siteId": "SITE-002",
+      "employeeId": "SCM-E002",
+      "present": true
+    },
+    {
+      "id": "att-4",
+      "date": "2024-04-21",
+      "siteId": "SITE-001",
+      "employeeId": "SCM-E001",
+      "present": true
+    }
+  ],
+  "documents": [
+    {
+      "id": "DOC-001",
+      "type": "invoice",
+      "title": "Facture Ciment - Villa Horizon",
+      "date": "2024-04-10",
+      "amount": 5400,
+      "clientName": "M. Kashama",
+      "status": "final"
+    },
+    {
+      "id": "DOC-002",
+      "type": "quote",
+      "title": "Devis Électricité - Immeuble Sky",
+      "date": "2024-04-15",
+      "amount": 15600,
+      "clientName": "SCM Private",
+      "status": "draft"
+    },
+    {
+      "id": "DOC-003",
+      "type": "receipt",
+      "title": "Reçu Acompte - Jean Dupont",
+      "date": "2024-04-18",
+      "amount": 800,
+      "clientName": "Jean Dupont",
+      "status": "final"
+    }
+  ]
+}
