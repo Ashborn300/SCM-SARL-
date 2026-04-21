@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Layout from './Layout';
 import { 
   Users, Building2, HardHat, DollarSign, 
   ClipboardCheck, TrendingUp, Plus, Search, 
   MoreVertical, Download, Filter, FileText,
-  AlertTriangle, CheckCircle2, Clock, ChevronRight, X
+  AlertTriangle, CheckCircle2, Clock, ChevronRight, X,
+  Camera, Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -13,6 +14,7 @@ import {
   BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import { useData } from '../context/DataContext';
+import { generateEmployeePDF } from '../lib/pdfUtils';
 
 const StatCard = ({ title, value, trend, trendColor, subValue, progress }: any) => (
   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -43,6 +45,109 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [isAddingSite, setIsAddingSite] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [editingSite, setEditingSite] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewEmployee({ ...newEmployee, photo: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Form states for adding
+  const [newEmployee, setNewEmployee] = useState({
+    fullName: '',
+    position: '',
+    age: '',
+    address: '',
+    salaryTotal: '',
+    assignedSiteId: '',
+    photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+  });
+
+  const [newSite, setNewSite] = useState({
+    name: '',
+    location: '',
+    code: '',
+    description: '',
+    budget: '',
+    advancement: '0',
+    managerId: ''
+  });
+
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...newEmployee,
+        age: parseInt(newEmployee.age) || 0,
+        salaryTotal: parseInt(newEmployee.salaryTotal) || 0,
+        salaryPaid: editingEmployee ? editingEmployee.salaryPaid : 0,
+        status: editingEmployee ? editingEmployee.status : 'active',
+        gender: editingEmployee ? editingEmployee.gender : 'M',
+        name: newEmployee.fullName.split(' ')[0]
+      };
+
+      if (editingEmployee) {
+        await updateEmployee(editingEmployee.id, payload as any);
+      } else {
+        await addEmployee(payload as any);
+      }
+      
+      setIsAddingEmployee(false);
+      setEditingEmployee(null);
+      setNewEmployee({
+        fullName: '',
+        position: '',
+        age: '',
+        address: '',
+        salaryTotal: '',
+        assignedSiteId: '',
+        photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleAddSite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...newSite,
+        budget: parseInt(newSite.budget) || 0,
+        advancement: parseInt(newSite.advancement) || 0,
+        status: editingSite ? editingSite.status : 'ongoing',
+        employeeIds: editingSite ? editingSite.employeeIds : []
+      };
+
+      if (editingSite) {
+        await updateSite(editingSite.id, payload as any);
+      } else {
+        await addSite(payload as any);
+      }
+
+      setIsAddingSite(false);
+      setEditingSite(null);
+      setNewSite({
+        name: '',
+        location: '',
+        code: '',
+        description: '',
+        budget: '',
+        advancement: '0',
+        managerId: ''
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const renderDashboard = () => (
     <div className="space-y-8">
@@ -172,6 +277,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                 <th className="px-6 py-3">Chantier</th>
                 <th className="px-6 py-3 text-right">Salaire Payé</th>
                 <th className="px-6 py-3">Statut</th>
+                <th className="px-6 py-3 text-center">Fiche</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-600">
@@ -199,6 +305,14 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest border border-emerald-100">Actif</span>
                   </td>
+                  <td className="px-6 py-4 text-center">
+                    <button 
+                      className="text-slate-400 hover:text-blue-600 transition"
+                      onClick={() => generateEmployeePDF(emp, sites.find(s => s.id === emp.assignedSiteId)?.name || 'Non assigné')}
+                    >
+                      <Download size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -220,7 +334,22 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
             <Filter size={18} />
             <span>Filtres</span>
           </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm">
+          <button 
+            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
+            onClick={() => {
+              setEditingEmployee(null);
+              setNewEmployee({
+                fullName: '',
+                position: '',
+                age: '',
+                address: '',
+                salaryTotal: '',
+                assignedSiteId: '',
+                photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+              });
+              setIsAddingEmployee(true);
+            }}
+          >
             <Plus size={18} />
             <span>Nouvel Employé</span>
           </button>
@@ -268,8 +397,37 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               </div>
 
               <div className="flex items-center space-x-2 w-full">
-                <button className="flex-1 bg-blue-50 text-blue-700 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition">Détails</button>
-                <button className="flex-1 bg-slate-50 text-slate-700 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-100 transition">Modifier</button>
+                <button 
+                  className="bg-slate-100 text-slate-700 p-2.5 rounded-lg hover:bg-slate-200 transition"
+                  onClick={() => generateEmployeePDF(emp, sites.find(s => s.id === emp.assignedSiteId)?.name || 'Non assigné')}
+                  title="Télécharger Fiche PDF"
+                >
+                  <Download size={16} />
+                </button>
+                <button 
+                  className="flex-1 bg-blue-50 text-blue-700 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition"
+                  onClick={() => {
+                    setEditingEmployee(emp);
+                    setNewEmployee({
+                      fullName: emp.fullName,
+                      position: emp.position,
+                      age: emp.age.toString(),
+                      address: emp.address,
+                      salaryTotal: emp.salaryTotal.toString(),
+                      assignedSiteId: emp.assignedSiteId || '',
+                      photo: emp.photo
+                    });
+                    setIsAddingEmployee(true);
+                  }}
+                >
+                  Modifier
+                </button>
+                <button 
+                  className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-lg text-xs font-bold hover:bg-red-100 transition"
+                  onClick={() => deleteEmployee(emp.id)}
+                >
+                  Supprimer
+                </button>
               </div>
             </div>
           </div>
@@ -282,7 +440,10 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h3 className="text-xl font-bold text-slate-800 self-start md:self-center">Gestion des Chantiers</h3>
-        <button className="w-full md:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm">
+        <button 
+          className="w-full md:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
+          onClick={() => setIsAddingSite(true)}
+        >
           <Plus size={18} />
           <span>Ajouter un Chantier</span>
         </button>
@@ -306,6 +467,24 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   }`}>
                     {site.status === 'ongoing' ? 'En Cours' : 'Terminé'}
                   </span>
+                  <button 
+                    onClick={() => {
+                      setEditingSite(site);
+                      setNewSite({
+                        name: site.name,
+                        location: site.location,
+                        code: site.code,
+                        description: site.description,
+                        budget: site.budget.toString(),
+                        advancement: site.advancement.toString(),
+                        managerId: site.managerId
+                      });
+                      setIsAddingSite(true);
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <TrendingUp size={16} />
+                  </button>
                   <button onClick={() => deleteSite(site.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
                     <X size={16} />
                   </button>
@@ -703,6 +882,289 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
       user={user}
     >
       {renderContent()}
+
+      {/* Employee Modal */}
+      <AnimatePresence>
+        {isAddingEmployee && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddingEmployee(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 className="text-xl font-bold text-slate-800">
+                  {editingEmployee ? 'Modifier l\'Employé' : 'Ajouter un Nouvel Employé'}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  {editingEmployee && (
+                    <button 
+                      type="button"
+                      onClick={() => generateEmployeePDF(editingEmployee, sites.find(s => s.id === editingEmployee.assignedSiteId)?.name || 'Non assigné')}
+                      className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all flex items-center space-x-1"
+                      title="Télécharger Fiche PDF"
+                    >
+                      <Download size={18} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Exporter PDF</span>
+                    </button>
+                  )}
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsAddingEmployee(false);
+                      setEditingEmployee(null);
+                    }} 
+                    className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative group">
+                    <img 
+                      src={newEmployee.photo} 
+                      className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm transition group-hover:opacity-75" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-2xl text-white"
+                    >
+                      <Camera size={24} />
+                    </button>
+                    <input 
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline"
+                  >
+                    Changer la photo
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nom Complet</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: Jean Dupont"
+                      value={newEmployee.fullName}
+                      onChange={e => setNewEmployee({...newEmployee, fullName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poste</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: Maçon"
+                      value={newEmployee.position}
+                      onChange={e => setNewEmployee({...newEmployee, position: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Âge</label>
+                    <input 
+                      required
+                      type="number"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: 30"
+                      value={newEmployee.age}
+                      onChange={e => setNewEmployee({...newEmployee, age: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Salaire Mensuel ($)</label>
+                    <input 
+                      required
+                      type="number"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: 1200"
+                      value={newEmployee.salaryTotal}
+                      onChange={e => setNewEmployee({...newEmployee, salaryTotal: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse</label>
+                  <input 
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Ex: Kinshasa, Gombe"
+                    value={newEmployee.address}
+                    onChange={e => setNewEmployee({...newEmployee, address: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assigner à un Chantier</label>
+                  <select 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    value={newEmployee.assignedSiteId}
+                    onChange={e => setNewEmployee({...newEmployee, assignedSiteId: e.target.value})}
+                  >
+                    <option value="">Non assigné</option>
+                    {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddingEmployee(false)}
+                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all"
+                  >
+                    {editingEmployee ? 'Enregistrer' : 'Confirmer'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Site Modal */}
+      <AnimatePresence>
+        {isAddingSite && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddingSite(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 className="text-xl font-bold text-slate-800">
+                  {editingSite ? 'Modifier le Chantier' : 'Créer un Nouveau Chantier'}
+                </h3>
+                <button 
+                  onClick={() => {
+                    setIsAddingSite(false);
+                    setEditingSite(null);
+                  }} 
+                  className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleAddSite} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nom du Chantier</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: Résidence Horizon"
+                      value={newSite.name}
+                      onChange={e => setNewSite({...newSite, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code Projet</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: RH-2024"
+                      value={newSite.code}
+                      onChange={e => setNewSite({...newSite, code: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Localisation</label>
+                  <input 
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Ex: Kinshasa, Limete"
+                    value={newSite.location}
+                    onChange={e => setNewSite({...newSite, location: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Budget ($)</label>
+                    <input 
+                      required
+                      type="number"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: 50000"
+                      value={newSite.budget}
+                      onChange={e => setNewSite({...newSite, budget: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Chef de Chantier</label>
+                    <select 
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      value={newSite.managerId}
+                      onChange={e => setNewSite({...newSite, managerId: e.target.value})}
+                    >
+                      <option value="">Sélectionner un manager</option>
+                      {managers.map(m => <option key={m.id} value={m.id}>{m.fullName}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</label>
+                  <textarea 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[80px]"
+                    placeholder="Détails du projet..."
+                    value={newSite.description}
+                    onChange={e => setNewSite({...newSite, description: e.target.value})}
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddingSite(false)}
+                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all"
+                  >
+                    {editingSite ? 'Enregistrer' : 'Créer Chantier'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 };
