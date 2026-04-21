@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   LayoutDashboard, Users, HardHat, Building2, 
   LogOut, Menu, X, ChevronRight, UserCircle2,
-  ClipboardCheck, DollarSign, FileText, BarChart3
+  ClipboardCheck, DollarSign, FileText, BarChart3, Wrench
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -54,6 +54,7 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'salaries', label: 'Salaires & Finances', icon: DollarSign, roles: ['admin'] },
     { id: 'documents', label: 'Documents', icon: FileText, roles: ['admin'] },
     { id: 'reports', label: 'Rapports', icon: BarChart3, roles: ['admin'] },
+    { id: 'tools', label: 'Outils', icon: Wrench, roles: ['admin'] },
     { id: 'profile', label: 'Profil', icon: UserCircle2, roles: ['admin', 'employee', 'manager'] },
   ];
 

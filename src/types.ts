@@ -41,6 +41,8 @@ export interface ConstructionSite {
   managerId: string;
   employeeIds: string[];
   advancement: number; // 0 to 100
+  photos?: string[]; // Array of base64 photos
+  steps?: { id: string; label: string; completed: boolean }[];
 }
 
 export interface AttendanceRecord {
@@ -68,4 +70,6 @@ export interface Document {
   amount?: number;
   clientName?: string;
   status: 'draft' | 'final';
+  pdfBase64?: string;
+  docModel?: any;
 }

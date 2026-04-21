@@ -26,6 +26,8 @@ interface DataContextType {
   deleteSite: (id: string) => Promise<void>;
   
   addDocument: (doc: Partial<SCMDocument>) => Promise<void>;
+  deleteDocument: (id: string) => Promise<void>;
+  clearDocumentsHistory: (type: string) => Promise<void>;
   saveAttendanceBatch: (records: Partial<AttendanceRecord>[]) => Promise<void>;
 }
 
@@ -146,6 +148,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateDoc(docRef, { id: docRef.id });
   };
 
+  const deleteDocument = async (id: string) => {
+    await deleteDoc(doc(db, 'documents', id));
+  };
+
+  const clearDocumentsHistory = async (type: string = 'all') => {
+    const toolTypes = ['invoice', 'quote', 'receipt'];
+    const snapshot = await getDocs(collection(db, 'documents'));
+    const batch = writeBatch(db);
+    
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (type === 'tools' && toolTypes.includes(data.type)) {
+        batch.delete(docSnap.ref);
+      } else if (type === 'all') {
+        batch.delete(docSnap.ref);
+      }
+    });
+    
+    await batch.commit();
+  };
+
   const saveAttendanceBatch = async (records: Partial<AttendanceRecord>[]) => {
     const batch = writeBatch(db);
     for (const record of records) {
@@ -160,7 +183,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       employees, managers, sites, attendance, documents, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addSite, updateSite, deleteSite,
-      addDocument, saveAttendanceBatch
+      addDocument, deleteDocument, clearDocumentsHistory, saveAttendanceBatch
     }}>
       {children}
     </DataContext.Provider>

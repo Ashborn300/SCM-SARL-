@@ -5,7 +5,9 @@ import {
   ClipboardCheck, TrendingUp, Plus, Search, 
   MoreVertical, Download, Filter, FileText,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X,
-  Camera, Upload
+  Camera, Upload, Wrench, Calculator, Receipt, ScrollText,
+  Trash2, ExternalLink, Share2, GripVertical, CheckCircle, Circle,
+  ArrowLeft, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -15,6 +17,7 @@ import {
 } from 'recharts';
 import { useData } from '../context/DataContext';
 import { generateEmployeePDF } from '../lib/pdfUtils';
+import { generateDocumentPDF } from '../lib/documentUtils';
 
 const StatCard = ({ title, value, trend, trendColor, subValue, progress }: any) => (
   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -38,7 +41,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     employees, sites, managers, attendance, documents, loading,
     addEmployee, updateEmployee, deleteEmployee,
     addSite, updateSite, deleteSite,
-    addDocument
+    addDocument, deleteDocument, clearDocumentsHistory
   } = useData();
   
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -48,6 +51,20 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [editingSite, setEditingSite] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sitePhotoInputRef = useRef<HTMLInputElement>(null);
+
+  // Tools states
+  const [selectedTool, setSelectedTool] = useState<any>('invoice');
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [isViewingSiteDetails, setIsViewingSiteDetails] = useState(false);
+  const [docModel, setDocModel] = useState({
+    clientName: '',
+    clientAddress: '',
+    number: `FAC-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: new Date().toISOString().split('T')[0],
+    items: [{ description: '', quantity: 1, price: 0 }],
+    note: ''
+  });
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -436,37 +453,416 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     </div>
   );
 
-  const renderSites = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h3 className="text-xl font-bold text-slate-800 self-start md:self-center">Gestion des Chantiers</h3>
-        <button 
-          className="w-full md:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
-          onClick={() => setIsAddingSite(true)}
-        >
-          <Plus size={18} />
-          <span>Ajouter un Chantier</span>
-        </button>
-      </div>
+  const renderSiteDetails = () => {
+    const site = sites.find(s => s.id === selectedSiteId);
+    if (!site) return null;
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {sites.map(site => (
-          <div key={site.id} className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/30">
-              <div className="flex justify-between items-start mb-4">
+    const manager = managers.find(m => m.assignedSiteId === site.id);
+    const siteEmployees = employees.filter(e => e.assignedSiteId === site.id);
+
+    const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          const currentPhotos = site.photos || [];
+          await updateSite(site.id, { photos: [...currentPhotos, base64] });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const handleDeletePhoto = async (photoIdx: number) => {
+      if (confirm("Supprimer cette photo ?")) {
+        const currentPhotos = [...(site.photos || [])];
+        currentPhotos.splice(photoIdx, 1);
+        await updateSite(site.id, { photos: currentPhotos });
+      }
+    };
+
+    const handleAddStep = async () => {
+      const label = prompt("Nom de l'étape :");
+      if (label) {
+        const currentSteps = site.steps || [];
+        const newStep = { id: Math.random().toString(36).substring(7), label, completed: false };
+        await updateSite(site.id, { steps: [...currentSteps, newStep] });
+      }
+    };
+
+    const handleToggleStep = async (stepId: string) => {
+      const currentSteps = (site.steps || []).map(s => 
+        s.id === stepId ? { ...s, completed: !s.completed } : s
+      );
+      await updateSite(site.id, { steps: currentSteps });
+    };
+
+    const handleDeleteStep = async (stepId: string) => {
+      if (confirm("Supprimer cette étape ?")) {
+        const currentSteps = (site.steps || []).filter(s => s.id !== stepId);
+        await updateSite(site.id, { steps: currentSteps });
+      }
+    };
+
+    const copyShareLink = () => {
+      const url = `${window.location.origin}${window.location.pathname}?siteId=${site.id}&shared=true`;
+      navigator.clipboard.writeText(url);
+      alert("Lien de partage copié !");
+    };
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => setIsViewingSiteDetails(false)}
+            className="flex items-center space-x-2 text-slate-500 hover:text-slate-800 transition font-bold text-xs uppercase tracking-widest"
+          >
+            <ArrowLeft size={16} />
+            <span>Retour aux chantiers</span>
+          </button>
+          <div className="flex space-x-3">
+             <button 
+               onClick={copyShareLink}
+               className="flex items-center space-x-2 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition font-bold text-xs uppercase tracking-widest"
+             >
+               <Share2 size={16} />
+               <span>Partager au client</span>
+             </button>
+             <button 
+               onClick={() => window.open(`?siteId=${site.id}&shared=true`, '_blank')}
+               className="flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition font-bold text-xs uppercase tracking-widest"
+             >
+               <ExternalLink size={16} />
+               <span>Aperçu Client</span>
+             </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Info Column */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-start mb-8">
                 <div>
-                  <h4 className="text-lg font-bold text-slate-800 mb-1">{site.name}</h4>
-                  <p className="text-xs text-slate-500 font-medium flex items-center">
-                    <Building2 size={12} className="mr-1 text-blue-600" />
-                    Localisation: {site.location}
+                  <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">{site.name}</h1>
+                  <p className="text-slate-500 font-medium flex items-center text-sm">
+                    <MapPin size={16} className="mr-2 text-blue-600" />
+                    {site.location}
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    site.status === 'ongoing' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {site.status === 'ongoing' ? 'En Cours' : 'Terminé'}
-                  </span>
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${
+                  site.status === 'ongoing' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'
+                }`}>
+                  {site.status === 'ongoing' ? 'En Cours' : 'Terminé'}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Code Projet</p>
+                  <p className="text-sm font-black text-slate-800">{site.code}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Date Début</p>
+                  <p className="text-sm font-black text-slate-800">{site.startDate}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Budget Estimé</p>
+                  <p className="text-sm font-black text-blue-600">${site.budget.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                 <div className="flex justify-between items-center">
+                   <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Description & Objectifs</h3>
+                 </div>
+                 <p className="text-sm text-slate-600 leading-relaxed italic">{site.description}</p>
+              </div>
+            </div>
+
+            {/* Steps Management */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-bold text-slate-800 flex items-center space-x-3">
+                  <Clock className="text-blue-600" />
+                  <span>Gestion des Étapes</span>
+                </h3>
+                <button 
+                  onClick={handleAddStep}
+                  className="bg-blue-50 text-blue-700 p-2 rounded-xl hover:bg-blue-100 transition shadow-sm border border-blue-100"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {(site.steps || []).map((step, idx) => (
+                  <div key={step.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 group">
+                    <div className="cursor-grab text-slate-300 group-hover:text-slate-400">
+                      <GripVertical size={20} />
+                    </div>
+                    <button 
+                      onClick={() => handleToggleStep(step.id)}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                        step.completed ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-transparent hover:border-blue-400'
+                      }`}
+                    >
+                      <CheckCircle2 size={14} />
+                    </button>
+                    <div className="flex-1">
+                      <p className={`text-sm font-bold ${step.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                        {step.label}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteStep(step.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+                {(site.steps || []).length === 0 && (
+                  <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 italic text-sm">
+                    Aucune étape définie. Cliquez sur "+" pour commencer à planifier le chantier.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Gallery Management */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-bold text-slate-800 flex items-center space-x-3">
+                  <Camera className="text-indigo-600" />
+                  <span>Galerie de Photos</span>
+                </h3>
+                <button 
+                  onClick={() => sitePhotoInputRef.current?.click()}
+                  className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl flex items-center space-x-2 border border-indigo-100 hover:bg-indigo-100 transition font-bold text-xs uppercase tracking-widest"
+                >
+                  <Upload size={16} />
+                  <span>Ajouter Photos</span>
+                </button>
+                <input 
+                  type="file" 
+                  ref={sitePhotoInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleAddPhoto} 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {(site.photos || []).map((photo, idx) => (
+                  <div key={idx} className="aspect-square relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-50">
+                    <img src={photo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                       <button 
+                        onClick={() => handleDeletePhoto(idx)}
+                        className="bg-white text-red-500 p-2 rounded-xl hover:scale-110 transition-transform shadow-lg"
+                       >
+                         <Trash2 size={16} />
+                       </button>
+                    </div>
+                  </div>
+                ))}
+                {(site.photos || []).length === 0 && (
+                  <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                    <Camera className="mx-auto text-slate-200 mb-4" size={48} />
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Aucune photo disponible</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Personnel Column */}
+          <div className="space-y-8">
+            <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/20 blur-[80px] -mr-24 -mt-24" />
+               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8 flex items-center space-x-2">
+                 <HardHat size={14} className="text-blue-500" />
+                 <span>Chef Responsable</span>
+               </h3>
+               {manager ? (
+                 <div className="flex items-center space-x-5">
+                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-slate-700 shadow-xl bg-slate-800">
+                     <img src={manager.photo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                   </div>
+                   <div>
+                     <h4 className="text-lg font-bold leading-tight">{manager.fullName}</h4>
+                     <p className="text-blue-400 font-bold uppercase text-[10px] tracking-widest mt-1">Directeur de projet</p>
+                   </div>
+                 </div>
+               ) : (
+                 <div className="p-4 rounded-2xl border border-dashed border-slate-700 text-slate-500 text-center text-xs italic">
+                    Aucun chef assigné à ce poste.
+                 </div>
+               )}
+            </div>
+
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8 flex items-center space-x-2">
+                 <Users size={16} className="text-blue-600" />
+                 <span>Personnel de Chantier ({siteEmployees.length})</span>
+               </h3>
+               <div className="space-y-6">
+                 {siteEmployees.map(emp => (
+                   <div key={emp.id} className="flex items-center justify-between group">
+                     <div className="flex items-center space-x-4">
+                       <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 group-hover:scale-110 transition-transform">
+                         <img src={emp.photo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                       </div>
+                       <div>
+                         <h4 className="text-sm font-bold text-slate-800 leading-tight">{emp.fullName}</h4>
+                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{emp.position}</p>
+                       </div>
+                     </div>
+                     <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600 transition-colors" />
+                   </div>
+                 ))}
+                 {siteEmployees.length === 0 && (
+                   <p className="text-slate-400 text-xs italic text-center py-4">Aucun ouvrier assigné.</p>
+                 )}
+               </div>
+            </div>
+
+            <div className="bg-blue-600 rounded-3xl p-8 text-white text-center">
+               <TrendingUp className="mx-auto mb-4" size={32} />
+               <h4 className="font-bold text-lg mb-2">Suivi d'Avancement</h4>
+               <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest leading-relaxed mb-6">
+                 Modifiez le pourcentage de progression globale pour informer le client.
+               </p>
+               <div className="flex items-center space-x-4 bg-white/10 p-4 rounded-2xl border border-white/10">
+                 <input 
+                  type="range" 
+                  min="0" max="100" 
+                  value={site.advancement}
+                  onChange={e => updateSite(site.id, { advancement: parseInt(e.target.value) })}
+                  className="flex-1 accent-white" 
+                 />
+                 <span className="text-xl font-black">{site.advancement}%</span>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSites = () => {
+    if (isViewingSiteDetails && selectedSiteId) {
+      return renderSiteDetails();
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <h3 className="text-xl font-bold text-slate-800 self-start md:self-center">Gestion des Chantiers</h3>
+          <button 
+            className="w-full md:w-auto flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
+            onClick={() => setIsAddingSite(true)}
+          >
+            <Plus size={18} />
+            <span>Ajouter un Chantier</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {sites.map(site => (
+            <div key={site.id} className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-100 bg-slate-50/30">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-800 mb-1">{site.name}</h4>
+                    <p className="text-xs text-slate-500 font-medium flex items-center">
+                      <Building2 size={12} className="mr-1 text-blue-600" />
+                      Localisation: {site.location}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                      site.status === 'ongoing' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {site.status === 'ongoing' ? 'En Cours' : 'Terminé'}
+                    </span>
+                    <button 
+                      onClick={() => {
+                        setEditingSite(site);
+                        setNewSite({
+                          name: site.name,
+                          location: site.location,
+                          code: site.code,
+                          description: site.description,
+                          budget: site.budget.toString(),
+                          advancement: site.advancement.toString(),
+                          managerId: site.managerId
+                        });
+                        setIsAddingSite(true);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                    >
+                      <TrendingUp size={16} />
+                    </button>
+                    <button onClick={() => deleteSite(site.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase">Avancement du Projet</span>
+                    <span className="text-xs font-bold text-blue-600">{site.advancement}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${site.advancement}%` }}
+                      transition={{ duration: 1 }}
+                      className={`h-full ${site.status === 'ongoing' ? 'bg-blue-600' : 'bg-emerald-500'}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-2">
+                  <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Chef</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{managers.find(m => m.assignedSiteId === site.id)?.fullName || 'N/A'}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Staff</p>
+                    <p className="text-xs font-bold text-slate-800">{employees.filter(e => e.assignedSiteId === site.id).length} Ouvriers</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Code</p>
+                    <p className="text-xs font-bold text-slate-800">{site.code}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-white flex items-center justify-between">
+                <div className="flex -space-x-2">
+                  {employees.filter(e => e.assignedSiteId === site.id).slice(0, 4).map(emp => (
+                    <img key={emp.id} src={emp.photo} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={emp.fullName} referrerPolicy="no-referrer" />
+                  ))}
+                  {employees.filter(e => e.assignedSiteId === site.id).length > 4 && (
+                    <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      +{employees.filter(e => e.assignedSiteId === site.id).length - 4}
+                    </div>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => {
+                      setSelectedSiteId(site.id);
+                      setIsViewingSiteDetails(true);
+                    }}
+                    className="px-4 py-2 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 transition"
+                  >
+                    Détails
+                  </button>
                   <button 
                     onClick={() => {
                       setEditingSite(site);
@@ -481,68 +877,18 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                       });
                       setIsAddingSite(true);
                     }}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                    className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition"
                   >
-                    <TrendingUp size={16} />
-                  </button>
-                  <button onClick={() => deleteSite(site.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
-                    <X size={16} />
+                    Modifier
                   </button>
                 </div>
               </div>
-
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Avancement du Projet</span>
-                  <span className="text-xs font-bold text-blue-600">{site.advancement}%</span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${site.advancement}%` }}
-                    transition={{ duration: 1 }}
-                    className={`h-full ${site.status === 'ongoing' ? 'bg-blue-600' : 'bg-emerald-500'}`}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-2">
-                <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Chef</p>
-                  <p className="text-xs font-bold text-slate-800 truncate">{managers.find(m => m.assignedSiteId === site.id)?.fullName || 'N/A'}</p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Staff</p>
-                  <p className="text-xs font-bold text-slate-800">{employees.filter(e => e.assignedSiteId === site.id).length} Ouvriers</p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Code</p>
-                  <p className="text-xs font-bold text-slate-800">{site.code}</p>
-                </div>
-              </div>
             </div>
-            
-            <div className="p-4 bg-white flex items-center justify-between">
-              <div className="flex -space-x-2">
-                {employees.filter(e => e.assignedSiteId === site.id).slice(0, 4).map(emp => (
-                  <img key={emp.id} src={emp.photo} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={emp.fullName} referrerPolicy="no-referrer" />
-                ))}
-                {employees.filter(e => e.assignedSiteId === site.id).length > 4 && (
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-400">
-                    +{employees.filter(e => e.assignedSiteId === site.id).length - 4}
-                  </div>
-                )}
-              </div>
-              <div className="flex space-x-2">
-                <button className="px-4 py-2 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 transition">Détails</button>
-                <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition">Modifier</button>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   const renderAttendance = () => (
     <div className="space-y-6">
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-center gap-4">
@@ -796,6 +1142,343 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     </div>
   );
 
+  const renderTools = () => {
+    const handleAddItem = () => {
+      setDocModel({
+        ...docModel,
+        items: [...docModel.items, { description: '', quantity: 1, price: 0 }]
+      });
+    };
+
+    const handleRemoveItem = (index: number) => {
+      const newItems = [...docModel.items];
+      newItems.splice(index, 1);
+      setDocModel({ ...docModel, items: newItems });
+    };
+
+    const handleUpdateItem = (index: number, field: string, value: any) => {
+      const newItems = [...docModel.items];
+      newItems[index] = { ...newItems[index], [field]: value };
+      setDocModel({ ...docModel, items: newItems });
+    };
+
+    const handleDownload = async () => {
+      const total = docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+      const docType = selectedTool === 'invoice' ? 'Facture' : selectedTool === 'quote' ? 'Devis' : 'Reçu';
+      
+      const pdfBase64 = generateDocumentPDF({
+        type: docType,
+        ...docModel,
+        total
+      });
+
+      // Store in DB
+      await addDocument({
+        type: selectedTool,
+        title: `${docType} - ${docModel.number}`,
+        date: docModel.date,
+        amount: total,
+        clientName: docModel.clientName,
+        status: 'final',
+        pdfBase64: pdfBase64 as string,
+        docModel: { ...docModel, total }
+      });
+    };
+
+    const toolHistory = documents.filter(d => ['invoice', 'quote', 'receipt'].includes(d.type));
+
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Tool Selector */}
+          <div className="w-full md:w-72 space-y-3">
+            {[
+              { id: 'invoice', label: 'Créateur de Factures', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { id: 'quote', label: 'Créateur de Devis', icon: ScrollText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { id: 'receipt', label: 'Créateur de Reçus', icon: Receipt, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+            ].map(tool => (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  setSelectedTool(tool.id);
+                  setDocModel({
+                    ...docModel,
+                    number: `${tool.id === 'invoice' ? 'FAC' : tool.id === 'quote' ? 'DEV' : 'REC'}-${Math.floor(1000 + Math.random() * 9000)}`
+                  });
+                }}
+                className={`w-full flex items-center space-x-3 p-4 rounded-xl border transition-all ${
+                  selectedTool === tool.id 
+                    ? 'border-blue-200 bg-white shadow-md' 
+                    : 'border-slate-100 bg-slate-50 hover:bg-white text-slate-500'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${selectedTool === tool.id ? tool.bg + ' ' + tool.color : 'bg-slate-200 text-slate-400'}`}>
+                  <tool.icon size={20} />
+                </div>
+                <span className={`text-sm font-bold ${selectedTool === tool.id ? 'text-slate-800' : ''}`}>{tool.label}</span>
+              </button>
+            ))}
+            
+            <div className="mt-8 p-6 bg-slate-900 rounded-2xl text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 blur-3xl -mr-16 -mt-16" />
+              <Calculator className="text-blue-400 mb-4" size={32} />
+              <h4 className="font-bold text-lg leading-tight mb-2 uppercase tracking-tight">Outil Précis SCM</h4>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Calcul automatique de la TVA et des totaux pour une gestion sans erreur.</p>
+            </div>
+          </div>
+
+          {/* Form Area */}
+          <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
+              <div>
+                <h4 className="font-bold text-slate-800 uppercase tracking-tight">
+                  {selectedTool === 'invoice' ? 'Nouvelle Facture' : selectedTool === 'quote' ? 'Nouveau Devis' : 'Nouveau Reçu'}
+                </h4>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Remplissez les informations ci-dessous</p>
+              </div>
+              <button 
+                onClick={handleDownload}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 uppercase tracking-widest"
+              >
+                <Download size={16} />
+                <span>Générer PDF</span>
+              </button>
+            </div>
+
+            <div className="p-8 space-y-8 overflow-y-auto no-scrollbar">
+              {/* Header Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Client / Bénéficiaire</label>
+                    <input 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                      placeholder="Nom du client"
+                      value={docModel.clientName}
+                      onChange={e => setDocModel({...docModel, clientName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Adresse Client</label>
+                    <input 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                      placeholder="Adresse complète"
+                      value={docModel.clientAddress}
+                      onChange={e => setDocModel({...docModel, clientAddress: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro du document</label>
+                    <input 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                      value={docModel.number}
+                      onChange={e => setDocModel({...docModel, number: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Date d'émission</label>
+                    <input 
+                      type="date"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                      value={docModel.date}
+                      onChange={e => setDocModel({...docModel, date: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-end">
+                  <h5 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Détails des prestations</h5>
+                  <button 
+                    onClick={handleAddItem}
+                    className="flex items-center space-x-1 text-blue-600 font-bold text-[10px] uppercase tracking-widest hover:underline"
+                  >
+                    <Plus size={14} />
+                    <span>Ajouter une ligne</span>
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {docModel.items.map((item, idx) => (
+                    <div key={idx} className="flex gap-3 group">
+                      <div className="flex-1">
+                        <input 
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                          placeholder="Description de l'article ou service"
+                          value={item.description}
+                          onChange={e => handleUpdateItem(idx, 'description', e.target.value)}
+                        />
+                      </div>
+                      <div className="w-24">
+                        <input 
+                          type="number"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-center"
+                          placeholder="Qté"
+                          value={item.quantity}
+                          onChange={e => handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="w-32">
+                        <input 
+                          type="number"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                          placeholder="Prix Unit."
+                          value={item.price}
+                          onChange={e => handleUpdateItem(idx, 'price', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="w-32 flex items-center justify-between px-2 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800">
+                        <span>$</span>
+                        <span>{(item.quantity * item.price).toLocaleString()}</span>
+                      </div>
+                      {docModel.items.length > 1 && (
+                        <button 
+                          onClick={() => handleRemoveItem(idx)}
+                          className="p-3 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Total calculation */}
+              <div className="flex flex-col items-end pt-6 border-t border-slate-100 space-y-3">
+                <div className="flex items-center space-x-12">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sous-total</span>
+                  <span className="text-lg font-bold text-slate-600">
+                    ${docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-12">
+                  <span className="text-base font-black text-slate-800 uppercase tracking-tight">Total Final</span>
+                  <span className="text-3xl font-black text-blue-600 tracking-tighter">
+                    ${docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes Additionnelles</label>
+                <textarea 
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[80px]"
+                  placeholder="Conditions de paiement, merci, etc..."
+                  value={docModel.note}
+                  onChange={e => setDocModel({...docModel, note: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tools History */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+            <div>
+              <h4 className="font-bold text-slate-800 uppercase tracking-tight">Historique des Documents Générés</h4>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Retrouvez et gérez vos factures, devis et reçus</p>
+            </div>
+            <button 
+              onClick={() => {
+                if(confirm("Effacer tout l'historique des outils ?")) {
+                  clearDocumentsHistory('tools');
+                }
+              }}
+              className="text-red-500 hover:text-red-600 font-bold text-xs uppercase tracking-widest flex items-center space-x-2 transition"
+            >
+              <AlertTriangle size={14} />
+              <span>Nettoyer tout l'historique</span>
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto no-scrollbar">
+            {toolHistory.length === 0 ? (
+              <div className="p-12 text-center">
+                <FileText className="mx-auto text-slate-200 mb-4" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aucun document dans l'historique</p>
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    <th className="px-6 py-4">Titre / Numéro</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Client</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4 text-right">Montant</th>
+                    <th className="px-6 py-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 italic">
+                  {toolHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(doc => (
+                    <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold text-slate-800 not-italic">{doc.title}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {doc.id}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
+                          doc.type === 'invoice' ? 'bg-blue-100 text-blue-700' : doc.type === 'quote' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {doc.type === 'invoice' ? 'Facture' : doc.type === 'quote' ? 'Devis' : 'Reçu'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-slate-600 not-italic">{doc.clientName}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-slate-500 not-italic">{doc.date}</p>
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-slate-800 not-italic">
+                        ${doc.amount?.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center space-x-3">
+                          <button 
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Télécharger à nouveau"
+                            onClick={() => {
+                              if (doc.pdfBase64) {
+                                const link = document.createElement('a');
+                                link.href = doc.pdfBase64;
+                                link.download = `${doc.title.toLowerCase().replace(/\s+/g, '_')}.pdf`;
+                                link.click();
+                              }
+                            }}
+                          >
+                            <Download size={18} />
+                          </button>
+                          <button 
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                            title="Effacer de l'historique"
+                            onClick={() => {
+                              if (confirm("Supprimer ce document de l'historique ?")) {
+                                deleteDocument(doc.id);
+                              }
+                            }}
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderReports = () => (
     <div className="space-y-6">
        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -866,6 +1549,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
       case 'salaries': return renderSalaries();
       case 'documents': return renderDocs();
       case 'reports': return renderReports();
+      case 'tools': return renderTools();
       case 'profile': return <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 font-bold uppercase tracking-widest shadow-inner">Page de Profil Administrateur</div>;
       default: return renderDashboard();
     }

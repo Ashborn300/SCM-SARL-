@@ -6,6 +6,7 @@ import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
+import SharedSiteView from './components/SharedSiteView';
 import { DataProvider, useData } from './context/DataContext';
 
 const MainApp: React.FC = () => {
@@ -72,6 +73,15 @@ const MainApp: React.FC = () => {
     await signOut(auth);
     setUser(null);
   };
+
+  // Check for shared view
+  const searchParams = new URLSearchParams(window.location.search);
+  const sharedSiteId = searchParams.get('siteId');
+  const isShared = searchParams.get('shared') === 'true';
+
+  if (sharedSiteId && isShared) {
+    return <SharedSiteView siteId={sharedSiteId} />;
+  }
 
   if (initLoading || (dataLoading && !user)) return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
