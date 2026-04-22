@@ -6,7 +6,7 @@ import {
   MoreVertical, Download, Filter, FileText,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X,
   Camera, Upload, Wrench, Calculator, Receipt, ScrollText,
-  Trash2, ExternalLink, Share2, GripVertical, CheckCircle, Circle,
+  Trash2, Edit, ExternalLink, Share2, GripVertical, CheckCircle, Circle,
   ArrowLeft, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -183,21 +183,21 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
           value={employees.length} 
           trend="+8% ↑" 
           trendColor="text-green-500"
-          subValue="Dont 12 recrutés ce mois"
+          subValue={`${employees.filter(e => e.status === 'active').length} collaborateurs actifs`}
         />
         <StatCard 
           title="Chantiers Actifs" 
           value={sites.filter(s => s.status === 'ongoing').length.toString().padStart(2, '0')} 
           trend="Normal"
           trendColor="text-blue-500"
-          subValue="3 en phase de finition"
+          subValue={`${sites.filter(s => s.advancement > 80).length} en phase de finition`}
         />
         <StatCard 
           title="Présence Jour" 
-          value="118" 
-          trend="95%"
+          value={attendance.filter(a => a.date === new Date().toISOString().split('T')[0] && a.status === 'present').length.toString()} 
+          trend={`${attendance.length > 0 ? Math.round((attendance.filter(a => a.date === new Date().toISOString().split('T')[0] && a.status === 'present').length / employees.length) * 100) : 0}%`}
           trendColor="text-emerald-500"
-          progress={95}
+          progress={attendance.length > 0 ? (attendance.filter(a => a.date === new Date().toISOString().split('T')[0] && a.status === 'present').length / employees.length) * 100 : 0}
         />
         <StatCard 
           title="Salaires Restants" 
@@ -215,7 +215,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
             <h4 className="font-bold text-slate-800">Chantiers Prioritaires</h4>
             <button className="text-blue-600 text-xs font-semibold hover:underline" onClick={() => setActiveTab('sites')}>Voir tout</button>
           </div>
-          <div className="overflow-x-auto no-scrollbar">
+          <div className="overflow-x-auto elegant-scrollbar">
             <table className="w-full text-left border-collapse min-w-[500px]">
               <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase font-bold tracking-wider">
                 <tr>
@@ -293,7 +293,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
           <h4 className="font-bold text-slate-800">Derniers Employés Affectés</h4>
           <button className="text-blue-600 text-xs font-semibold hover:underline" onClick={() => setActiveTab('employees')}>Gérer les employés</button>
         </div>
-        <div className="overflow-x-auto no-scrollbar">
+        <div className="overflow-x-auto elegant-scrollbar">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 text-[11px] text-slate-500 uppercase font-bold tracking-wider">
@@ -399,7 +399,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               <h4 className="text-lg font-bold text-slate-800 mb-0.5">{emp.fullName}</h4>
               <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">{emp.position}</p>
               
-              <div className="grid grid-cols-2 gap-4 w-full mb-6 py-4 border-y border-slate-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-6 py-4 border-y border-slate-50">
                 <div className="text-center">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Âge</p>
                   <p className="text-sm font-bold text-slate-700">{emp.age} ans</p>
@@ -834,7 +834,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
                   <div className="bg-white p-3 rounded-lg border border-slate-100 text-center">
                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Chef</p>
                     <p className="text-xs font-bold text-slate-800 truncate">{managers.find(m => m.assignedSiteId === site.id)?.fullName || 'N/A'}</p>
@@ -1053,7 +1053,8 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
              <input className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500" placeholder="Chercher un employé..." />
            </div>
          </div>
-         <table className="w-full text-left border-collapse">
+         <div className="overflow-x-auto elegant-scrollbar">
+           <table className="w-full text-left border-collapse min-w-[700px]">
            <thead>
              <tr className="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
                <th className="px-6 py-4">Employé</th>
@@ -1087,6 +1088,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
              ))}
            </tbody>
          </table>
+        </div>
       </div>
     </div>
   );
@@ -1294,15 +1296,15 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               </button>
             </div>
 
-            <div className="p-8 space-y-10 overflow-y-auto no-scrollbar">
+            <div className="p-4 sm:p-8 space-y-10 overflow-y-auto no-scrollbar scroll-smooth">
               {/* Header Info */}
-              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col space-y-6">
+              <div className="bg-slate-50/50 p-4 sm:p-6 rounded-2xl border border-slate-100 flex flex-col space-y-6">
                 <div className="flex items-center space-x-2 pb-4 border-b border-slate-100">
                   <Building2 size={18} className="text-blue-600" />
                   <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Informations Générales</h5>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
                   <div className="space-y-4">
                     <div className="group space-y-1.5 focus-within:translate-x-1 transition-transform">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center">
@@ -1479,7 +1481,8 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                 </div>
                 
                 <div className="bg-white border-2 border-slate-50 rounded-3xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto elegant-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
                         <th className="pl-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description de la prestation</th>
@@ -1546,10 +1549,11 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   </table>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
-                <div className="space-y-3">
+                <div className="flex flex-col lg:flex-row gap-6 sm:gap-10 pt-4">
+                    <div className="flex-1 space-y-3">
                   <div className="flex items-center space-x-2 ml-1">
                     <ScrollText size={14} className="text-slate-400" />
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes additionnelles & Conditions</label>
@@ -1621,14 +1625,14 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
             </button>
           </div>
           
-          <div className="overflow-x-auto no-scrollbar">
-            {toolHistory.length === 0 ? (
-              <div className="p-12 text-center">
-                <FileText className="mx-auto text-slate-200 mb-4" size={48} />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aucun document dans l'historique</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto elegant-scrollbar">
+             {toolHistory.length === 0 ? (
+               <div className="p-12 text-center">
+                 <FileText className="mx-auto text-slate-200 mb-4" size={48} />
+                 <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aucun document dans l'historique</p>
+               </div>
+             ) : (
+               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                     <th className="px-6 py-4">Titre / Numéro</th>
@@ -1639,31 +1643,35 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                     <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 italic">
+                <tbody className="divide-y divide-slate-100">
                   {toolHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(doc => (
                     <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-bold text-slate-800 not-italic">{doc.title}</p>
+                        <p className="text-sm font-bold text-slate-800">{doc.title}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {doc.id}</p>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
-                          doc.type === 'invoice' ? 'bg-blue-100 text-blue-700' : doc.type === 'quote' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'
+                          doc.type === 'invoice' ? 'bg-blue-100 text-blue-700' : 
+                          doc.type === 'quote' ? 'bg-indigo-100 text-indigo-700' : 
+                          doc.type === 'receipt' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                         }`}>
-                          {doc.type === 'invoice' ? 'Facture' : doc.type === 'quote' ? 'Devis' : 'Reçu'}
+                          {doc.type === 'invoice' ? 'Facture' : 
+                           doc.type === 'quote' ? 'Devis' : 
+                           doc.type === 'receipt' ? 'Reçu' : 'Contrat'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-semibold text-slate-600 not-italic">{doc.clientName}</p>
+                        <p className="text-sm font-semibold text-slate-600">{doc.clientName}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm text-slate-500 not-italic">{doc.date}</p>
+                        <p className="text-sm text-slate-500">{doc.date}</p>
                       </td>
-                      <td className="px-6 py-4 text-right font-black text-slate-800 not-italic">
+                      <td className="px-6 py-4 text-right font-black text-slate-800">
                         ${doc.amount?.toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-3">
+                        <div className="flex items-center justify-center space-x-2">
                           <button 
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                             title="Télécharger à nouveau"
@@ -1676,18 +1684,31 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                               }
                             }}
                           >
-                            <Download size={18} />
+                            <Download size={16} />
+                          </button>
+                          <button 
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            title="Modifier ce document"
+                            onClick={() => {
+                              if (doc.docModel) {
+                                setSelectedTool(doc.type);
+                                setDocModel(doc.docModel);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }}
+                          >
+                            <Edit size={16} />
                           </button>
                           <button 
                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                            title="Effacer de l'historique"
+                            title="Supprimer définitivement"
                             onClick={() => {
-                              if (confirm("Supprimer ce document de l'historique ?")) {
+                              if (confirm("Supprimer ce document définitivement de l'historique ?")) {
                                 deleteDocument(doc.id);
                               }
                             }}
                           >
-                            <X size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -1759,8 +1780,8 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                </div>
              ))}
           </div>
+         </div>
        </div>
-    </div>
   );
 
   const renderContent = () => {

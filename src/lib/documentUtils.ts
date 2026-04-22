@@ -33,27 +33,29 @@ export const generateDocumentPDF = (data: DocumentData, saveOnly: boolean = fals
   
   // Logo image
   try {
-    doc.addImage('/logo.png', 'PNG', 20, 10, 35, 35);
+    doc.addImage('/logo.png', 'PNG', 20, 6, 25, 25);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('S.C.M. SARL', 20, 38);
+    
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('RCCM: CD/KNM/RCCM/24-B-01256 | IDNAT: 01-F4200-N55523N | N°IMPÔT: A2442 173S', 20, 42);
   } catch (e) {
+    // Fallback if logo not found
     doc.setTextColor(15, 23, 42); // slate-900
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('S.C.M. SARL', 20, 20);
+    doc.text('S.C.M. SARL', 20, 25);
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('RCCM: CD/KNM/RCCM/24-B-01256 | IDNAT: 01-F4200-N55523N | N°IMPÔT: A2442 173S', 20, 33);
   }
   
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 41, 59);
-  doc.text('RCCM : CD/KNM/RCCM/ 24-B-01256', 90, 15);
-  doc.text('IDNAT : 01-F4200-N55523N', 90, 22);
-  doc.text('N°IMPÔT : A2442 173S', 90, 29);
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  doc.text('Construction Management & Enterprise', 20, 28);
-  doc.text('Kinshasa, RD Congo', 20, 33);
-
   doc.setFontSize(18);
   doc.setTextColor(15, 23, 42);
   doc.text(data.type.toUpperCase(), pageWidth - 20, 25, { align: 'right' });

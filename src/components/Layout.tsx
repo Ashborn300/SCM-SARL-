@@ -155,7 +155,7 @@ const Layout: React.FC<LayoutProps> = ({
         </header>
 
         {/* Dynamic Content */}
-        <div className="flex-1 overflow-y-auto p-8 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 no-scrollbar scroll-smooth">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0 }}

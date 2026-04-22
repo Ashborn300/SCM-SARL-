@@ -17,25 +17,27 @@ export const generateEmployeePDF = async (employee: any, siteName: string) => {
 
   // Company Logo
   try {
-    doc.addImage('/logo.png', 'PNG', 15, 10, 40, 40);
+    doc.addImage('/logo.png', 'PNG', 15, 10, 25, 25);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('S.C.M. SARL', 15, 42);
   } catch (e) {
     doc.setTextColor(15, 23, 42); // slate-900
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
+    doc.setFontSize(22);
     doc.text('S.C.M. SARL', 20, 25);
   }
   
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('RCCM : CD/KNM/RCCM/ 24-B-01256', 80, 20);
-  doc.text('IDNAT : 01-F4200-N55523N', 80, 25);
-  doc.text('N°IMPÔT : A2442 173S', 80, 30);
-
-  doc.setFontSize(10);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text('FICHE D\'IDENTITÉ DE L\'EMPLOYÉ', 20, 34);
-  doc.text('Date de génération: ' + new Date().toLocaleDateString(), 20, 38);
+  doc.text('RCCM: CD/KNM/RCCM/24-B-01256 | IDNAT: 01-F4200-N55523N | N°IMPÔT: A2442 173S', 15, 47);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('FICHE D\'IDENTITÉ PROFESSIONNELLE', 15, 54);
 
   // Profile Image placeholder or actual image
   try {

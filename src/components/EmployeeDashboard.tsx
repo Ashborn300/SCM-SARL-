@@ -48,12 +48,12 @@ const EmployeeDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Site Details Card */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-900 rounded-xl p-8 text-white shadow-[0_10px_40px_-15px_rgba(15,23,42,0.3)] relative overflow-hidden group">
+          <div className="bg-slate-900 rounded-xl p-6 sm:p-8 text-white shadow-[0_10px_40px_-15px_rgba(15,23,42,0.3)] relative overflow-hidden group">
             <div className="absolute inset-0 opacity-10 pointer-events-none grayscale transition-opacity group-hover:opacity-20">
               <img src="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?w=800&fit=crop" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             </div>
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-10">
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-10 gap-4">
                  <div className="space-y-1">
                    <p className="text-blue-400 font-bold uppercase tracking-widest text-[10px]">Chantier Assigné</p>
                    <h3 className="text-2xl font-black tracking-tighter uppercase">{assignedSite?.name || 'Aucun chantier'}</h3>
@@ -63,7 +63,7 @@ const EmployeeDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user
                  </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Localisation</p>
                     <p className="text-sm font-bold">{assignedSite?.location || 'N/A'}</p>
@@ -171,8 +171,12 @@ const EmployeeDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user
                     <div className="w-px h-full bg-slate-100 min-h-[40px] mt-2" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-700">Affectation réussie</p>
-                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Aujourd'hui</p>
+                    <p className="text-xs font-bold text-slate-700">Dernier pointage</p>
+                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">
+                      {attendance.filter(a => a.employeeId === employee.id).length > 0 
+                        ? new Date(Math.max(...attendance.filter(a => a.employeeId === employee.id).map(a => new Date(a.date).getTime()))).toLocaleDateString()
+                        : 'Jamais'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex space-x-4">
@@ -181,8 +185,8 @@ const EmployeeDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user
                     <div className="w-px h-full bg-slate-100 min-h-[40px] mt-2" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-700">Acompte reçu: $400</p>
-                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">18 Avril 2024</p>
+                    <p className="text-xs font-bold text-slate-700">Paiement reçu</p>
+                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">${employee.salaryPaid.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="flex space-x-4">
@@ -190,8 +194,8 @@ const EmployeeDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user
                     <div className="w-2 h-2 rounded-full bg-slate-300 mt-1.5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-700">Identifiant activé</p>
-                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">15 Janvier 2024</p>
+                    <p className="text-xs font-bold text-slate-700">Identifiant employé</p>
+                    <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">{employee.id}</p>
                   </div>
                 </div>
               </div>

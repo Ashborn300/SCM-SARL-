@@ -22,6 +22,13 @@ const ManagerDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user,
   const site = sites.find(s => s.id === manager.assignedSiteId);
   const siteEmployees = employees.filter(e => e.assignedSiteId === site?.id);
 
+  const attendanceRecords = useData().attendance;
+  const siteAttendance = attendanceRecords.filter(a => a.siteId === site?.id);
+  const today = new Date().toISOString().split('T')[0];
+  const presentToday = siteAttendance.filter(a => a.date === today && a.status === 'present').length;
+  
+  const monthlyRate = siteEmployees.length > 0 ? Math.round((siteAttendance.filter(a => a.status === 'present').length / (siteAttendance.length || 1)) * 100) : 0;
+
   const handleToggle = (id: string, state: boolean) => {
     setAttendance(prev => ({ ...prev, [id]: state }));
   };
@@ -116,14 +123,14 @@ const ManagerDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user,
                 Statistiques Travailleurs
                 <Info size={16} className="text-slate-300" />
               </h4>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                  <div className="space-y-1">
                     <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Assignés</p>
                     <p className="text-4xl font-black text-slate-800 tracking-tighter">{siteEmployees.length}</p>
                  </div>
                  <div className="space-y-1">
                     <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Actifs</p>
-                    <p className="text-4xl font-black text-blue-600 tracking-tighter">{siteEmployees.length}</p>
+                    <p className="text-4xl font-black text-blue-600 tracking-tighter">{presentToday}</p>
                  </div>
               </div>
            </div>
@@ -131,10 +138,13 @@ const ManagerDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user,
            <div className="mt-12 pt-8 border-t border-slate-100">
              <div className="flex justify-between items-center mb-3">
                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Taux de présence mensuel</p>
-               <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Performance Élevée</p>
+               <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{monthlyRate > 80 ? 'Performance Élevée' : 'Performance Moyenne'}</p>
              </div>
              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
-                <div className="h-full bg-blue-600 w-[92%] shadow-lg shadow-blue-500/30" />
+                <div 
+                  className="h-full bg-blue-600 shadow-lg shadow-blue-500/30 transition-all duration-1000" 
+                  style={{ width: `${monthlyRate}%` }}
+                />
              </div>
            </div>
         </div>
@@ -184,7 +194,7 @@ const ManagerDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user,
       )}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
-         <div className="overflow-x-auto no-scrollbar">
+         <div className="overflow-x-auto elegant-scrollbar">
            <table className="w-full text-left border-collapse min-w-[700px]">
              <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
                <tr className="border-b border-slate-200">
