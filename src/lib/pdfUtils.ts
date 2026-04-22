@@ -15,16 +15,26 @@ export const generateEmployeePDF = async (employee: any, siteName: string) => {
   doc.setFillColor(248, 250, 252); // slate-50
   doc.rect(0, 0, 210, 60, 'F');
 
-  // Company Name
-  doc.setTextColor(15, 23, 42); // slate-900
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(24);
-  doc.text('S.C.M SARL', 20, 25);
+  // Company Logo
+  try {
+    doc.addImage('/logo.png', 'PNG', 15, 10, 40, 40);
+  } catch (e) {
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text('S.C.M. SARL', 20, 25);
+  }
   
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RCCM : CD/KNM/RCCM/ 24-B-01256', 80, 20);
+  doc.text('IDNAT : 01-F4200-N55523N', 80, 25);
+  doc.text('N°IMPÔT : A2442 173S', 80, 30);
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text('FICHE D\'IDENTITÉ DE L\'EMPLOYÉ', 20, 32);
+  doc.text('FICHE D\'IDENTITÉ DE L\'EMPLOYÉ', 20, 34);
   doc.text('Date de génération: ' + new Date().toLocaleDateString(), 20, 38);
 
   // Profile Image placeholder or actual image

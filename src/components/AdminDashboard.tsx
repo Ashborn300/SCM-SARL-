@@ -57,14 +57,22 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
   const [selectedTool, setSelectedTool] = useState<any>('invoice');
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [isViewingSiteDetails, setIsViewingSiteDetails] = useState(false);
-  const [docModel, setDocModel] = useState({
+  const [docModel, setDocModel] = useState<any>({
     clientName: '',
     clientAddress: '',
     number: `FAC-${Math.floor(1000 + Math.random() * 9000)}`,
     date: new Date().toISOString().split('T')[0],
     items: [{ description: '', quantity: 1, price: 0 }],
-    note: ''
+    note: '',
+    contractContent: '',
+    signerNameA: 'LE DIRECTEUR GÉNÉRAL (SCM SARL)',
+    signatureImageA: '',
+    signerNameB: '',
+    signatureImageB: ''
   });
+
+  const signatureAInputRef = useRef<HTMLInputElement>(null);
+  const signatureBInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1163,8 +1171,14 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     };
 
     const handleDownload = async () => {
-      const total = docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
-      const docType = selectedTool === 'invoice' ? 'Facture' : selectedTool === 'quote' ? 'Devis' : 'Reçu';
+      const isContract = selectedTool.includes('contract');
+      const total = !isContract ? docModel.items.reduce((acc: number, item: any) => acc + (item.quantity * item.price), 0) : 0;
+      
+      let docType: any = 'Facture';
+      if (selectedTool === 'quote') docType = 'Devis';
+      if (selectedTool === 'receipt') docType = 'Reçu';
+      if (selectedTool === 'construction_contract') docType = 'Contrat de Construction';
+      if (selectedTool === 'labor_contract') docType = 'Contrat de Travail';
       
       const pdfBase64 = generateDocumentPDF({
         type: docType,
@@ -1185,7 +1199,35 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
       });
     };
 
-    const toolHistory = documents.filter(d => ['invoice', 'quote', 'receipt'].includes(d.type));
+    const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>, party: 'A' | 'B') => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setDocModel({ 
+            ...docModel, 
+            [party === 'A' ? 'signatureImageA' : 'signatureImageB']: reader.result as string 
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const toolHistory = documents.filter(d => ['invoice', 'quote', 'receipt', 'construction_contract', 'labor_contract'].includes(d.type));
+
+    const setTemplate = (toolId: string) => {
+      if (toolId === 'construction_contract') {
+        setDocModel({
+          ...docModel,
+          contractContent: `ENTRE LES SOUSSIGNÉS:\n\nLa société S.C.M. SARL, située à Kinshasa, représentée par son Directeur Général, d'une part;\n\nET\n\nLe Client : [Nom du Client], résidant à [Adresse], d'autre part.\n\nIL A ÉTÉ CONVENU CE QUI SUIT:\n\nArticle 1: Objet du contrat\nLe présent contrat a pour objet la réalisation des travaux de construction situés à [Localisation].\n\nArticle 2: Durée des travaux\nLes travaux débuteront le [Date] pour une durée estimée à [Durée].\n\nArticle 3: Prix et modalités de paiement\nLe montant total des travaux est fixé à [Montant] USD.\n\nFait à Kinshasa, le ${new Date().toLocaleDateString()}`
+        });
+      } else if (toolId === 'labor_contract') {
+        setDocModel({
+          ...docModel,
+          contractContent: `CONTRAT DE TRAVAIL\n\nENTRE:\nLa société S.C.M. SARL, employeur;\n\nET:\nL'employé(e): [Nom de l'employé], matricule [ID].\n\nArticle 1: Engagement\nL'employé est engagé en qualité de [Poste] à compter du [Date].\n\nArticle 2: Rémunération\nLe salaire mensuel est fixé à [Montant] USD.\n\nArticle 3: Obligations\nL'employé s'engage à respecter le règlement intérieur de l'entreprise.\n\nFait à Kinshasa, le ${new Date().toLocaleDateString()}`
+        });
+      }
+    };
 
     return (
       <div className="space-y-8">
@@ -1193,18 +1235,22 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
           {/* Tool Selector */}
           <div className="w-full md:w-72 space-y-3">
             {[
-              { id: 'invoice', label: 'Créateur de Factures', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { id: 'quote', label: 'Créateur de Devis', icon: ScrollText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-              { id: 'receipt', label: 'Créateur de Reçus', icon: Receipt, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+              { id: 'invoice', label: 'Factures', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { id: 'quote', label: 'Devis', icon: ScrollText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { id: 'receipt', label: 'Reçus', icon: Receipt, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { id: 'construction_contract', label: 'Contrat Construction', icon: Building2, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { id: 'labor_contract', label: 'Contrat de Travail', icon: HardHat, color: 'text-slate-600', bg: 'bg-slate-50' }
             ].map(tool => (
               <button
                 key={tool.id}
                 onClick={() => {
                   setSelectedTool(tool.id);
+                  const prefix = tool.id === 'invoice' ? 'FAC' : tool.id === 'quote' ? 'DEV' : tool.id === 'receipt' ? 'REC' : 'CON';
                   setDocModel({
                     ...docModel,
-                    number: `${tool.id === 'invoice' ? 'FAC' : tool.id === 'quote' ? 'DEV' : 'REC'}-${Math.floor(1000 + Math.random() * 9000)}`
+                    number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`
                   });
+                  if (tool.id.includes('contract')) setTemplate(tool.id);
                 }}
                 className={`w-full flex items-center space-x-3 p-4 rounded-xl border transition-all ${
                   selectedTool === tool.id 
@@ -1232,7 +1278,10 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
             <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
               <div>
                 <h4 className="font-bold text-slate-800 uppercase tracking-tight">
-                  {selectedTool === 'invoice' ? 'Nouvelle Facture' : selectedTool === 'quote' ? 'Nouveau Devis' : 'Nouveau Reçu'}
+                  {selectedTool === 'invoice' ? 'Nouvelle Facture' : 
+                   selectedTool === 'quote' ? 'Nouveau Devis' : 
+                   selectedTool === 'receipt' ? 'Nouveau Reçu' :
+                   selectedTool === 'construction_contract' ? 'Contrat de Construction' : 'Contrat de Travail'}
                 </h4>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Remplissez les informations ci-dessous</p>
               </div>
@@ -1245,134 +1294,308 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               </button>
             </div>
 
-            <div className="p-8 space-y-8 overflow-y-auto no-scrollbar">
+            <div className="p-8 space-y-10 overflow-y-auto no-scrollbar">
               {/* Header Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Client / Bénéficiaire</label>
-                    <input 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                      placeholder="Nom du client"
-                      value={docModel.clientName}
-                      onChange={e => setDocModel({...docModel, clientName: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Adresse Client</label>
-                    <input 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                      placeholder="Adresse complète"
-                      value={docModel.clientAddress}
-                      onChange={e => setDocModel({...docModel, clientAddress: e.target.value})}
-                    />
-                  </div>
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col space-y-6">
+                <div className="flex items-center space-x-2 pb-4 border-b border-slate-100">
+                  <Building2 size={18} className="text-blue-600" />
+                  <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Informations Générales</h5>
                 </div>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro du document</label>
-                    <input 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                      value={docModel.number}
-                      onChange={e => setDocModel({...docModel, number: e.target.value})}
-                    />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                  <div className="space-y-4">
+                    <div className="group space-y-1.5 focus-within:translate-x-1 transition-transform">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center">
+                        <Users size={12} className="mr-1.5" /> {selectedTool.includes('contract') ? 'Partie Contractante / Employé' : 'Client / Bénéficiaire'}
+                      </label>
+                      <input 
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none text-sm font-bold shadow-sm transition-all text-slate-800 placeholder:text-slate-300"
+                        placeholder="Ex: Entreprise SCM SARL ou Nom du client"
+                        value={docModel.clientName}
+                        onChange={e => setDocModel({...docModel, clientName: e.target.value})}
+                      />
+                    </div>
+                    <div className="group space-y-1.5 focus-within:translate-x-1 transition-transform">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center">
+                         <MapPin size={12} className="mr-1.5" /> Adresse de livraison / Facturation
+                      </label>
+                      <input 
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none text-sm font-bold shadow-sm transition-all text-slate-800 placeholder:text-slate-300"
+                        placeholder="Ex: Avenue de la justice, Kinshasa, Gombe"
+                        value={docModel.clientAddress}
+                        onChange={e => setDocModel({...docModel, clientAddress: e.target.value})}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Date d'émission</label>
-                    <input 
-                      type="date"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                      value={docModel.date}
-                      onChange={e => setDocModel({...docModel, date: e.target.value})}
-                    />
+                  
+                  <div className="space-y-4">
+                    <div className="group space-y-1.5 focus-within:translate-x-1 transition-transform">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center">
+                        <FileText size={12} className="mr-1.5" /> Numéro de référence
+                      </label>
+                      <input 
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none text-sm font-bold shadow-sm transition-all text-slate-800"
+                        value={docModel.number}
+                        onChange={e => setDocModel({...docModel, number: e.target.value})}
+                      />
+                    </div>
+                    <div className="group space-y-1.5 focus-within:translate-x-1 transition-transform">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center">
+                        <Clock size={12} className="mr-1.5" /> Date d'émission
+                      </label>
+                      <input 
+                        type="date"
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none text-sm font-bold shadow-sm transition-all text-slate-800"
+                        value={docModel.date}
+                        onChange={e => setDocModel({...docModel, date: e.target.value})}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Items Table */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <h5 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Détails des prestations</h5>
+              {/* Contract or Items Table */}
+              {selectedTool.includes('contract') ? (
+                <div className="space-y-6">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                          <ScrollText size={12} className="mr-1.5" /> Corps du Contrat
+                        </label>
+                        <textarea 
+                          className="w-full px-5 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:border-blue-500 outline-none text-sm font-semibold min-h-[400px] text-slate-700 leading-relaxed"
+                          value={docModel.contractContent}
+                          onChange={e => setDocModel({...docModel, contractContent: e.target.value})}
+                        />
+                     </div>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-200">
+                        {/* Party A */}
+                        <div className="space-y-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                           <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                                <Users size={12} className="mr-1.5" /> Nom du Signataire (Partie A)
+                              </label>
+                              <input 
+                                className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-blue-500 outline-none text-sm font-bold"
+                                placeholder="Nom complet / Titre"
+                                value={docModel.signerNameA}
+                                onChange={e => setDocModel({...docModel, signerNameA: e.target.value})}
+                              />
+                           </div>
+                           <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                                <Search size={12} className="mr-1.5" /> Signature / Sceau A
+                              </label>
+                              <input 
+                                type="file"
+                                ref={signatureAInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={e => handleSignatureUpload(e, 'A')}
+                              />
+                              <button 
+                                onClick={() => signatureAInputRef.current?.click()}
+                                className="w-full h-24 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group overflow-hidden"
+                              >
+                                {docModel.signatureImageA ? (
+                                  <div className="relative w-full h-full p-2">
+                                    <img src={docModel.signatureImageA} className="w-full h-full object-contain" alt="Signature A" />
+                                    <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors" />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Upload size={16} className="text-slate-400 group-hover:text-blue-500 mb-1" />
+                                    <span className="text-[9px] font-black text-slate-400 group-hover:text-blue-600 uppercase">Partie A</span>
+                                  </>
+                                )}
+                              </button>
+                           </div>
+                        </div>
+
+                        {/* Party B */}
+                        <div className="space-y-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                           <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                                <Users size={12} className="mr-1.5" /> Nom du Signataire (Partie B)
+                              </label>
+                              <input 
+                                className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-blue-500 outline-none text-sm font-bold"
+                                placeholder="Nom complet / Titre"
+                                value={docModel.signerNameB}
+                                onChange={e => setDocModel({...docModel, signerNameB: e.target.value})}
+                              />
+                           </div>
+                           <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                                <Search size={12} className="mr-1.5" /> Signature / Sceau B
+                              </label>
+                              <input 
+                                type="file"
+                                ref={signatureBInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={e => handleSignatureUpload(e, 'B')}
+                              />
+                              <button 
+                                onClick={() => signatureBInputRef.current?.click()}
+                                className="w-full h-24 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group overflow-hidden"
+                              >
+                                {docModel.signatureImageB ? (
+                                  <div className="relative w-full h-full p-2">
+                                    <img src={docModel.signatureImageB} className="w-full h-full object-contain" alt="Signature B" />
+                                    <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors" />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Upload size={16} className="text-slate-400 group-hover:text-blue-500 mb-1" />
+                                    <span className="text-[9px] font-black text-slate-400 group-hover:text-blue-600 uppercase">Partie B</span>
+                                  </>
+                                )}
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                <div className="flex justify-between items-center bg-slate-900 text-white p-4 rounded-2xl shadow-lg shadow-slate-900/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white/10 rounded-lg text-blue-400">
+                      <Plus size={18} />
+                    </div>
+                    <div>
+                      <h5 className="text-[11px] font-black uppercase tracking-[0.2em] leading-none">Détails des articles</h5>
+                      <p className="text-[9px] text-slate-400 mt-1 uppercase font-bold opacity-60">Ajoutez les prestations ou matériels</p>
+                    </div>
+                  </div>
                   <button 
                     onClick={handleAddItem}
-                    className="flex items-center space-x-1 text-blue-600 font-bold text-[10px] uppercase tracking-widest hover:underline"
+                    className="bg-white text-slate-900 h-10 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-sm"
                   >
-                    <Plus size={14} />
-                    <span>Ajouter une ligne</span>
+                    Ajouter un élément
                   </button>
                 </div>
                 
+                <div className="bg-white border-2 border-slate-50 rounded-3xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="pl-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description de la prestation</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center w-24">Quantité</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-36">Prix unitaire</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 text-right">Montant Total</th>
+                        <th className="pr-6 py-4 w-16"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      <AnimatePresence initial={false}>
+                        {docModel.items.map((item, idx) => (
+                          <motion.tr 
+                            key={idx}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="group hover:bg-slate-50/30 transition-colors overflow-hidden"
+                          >
+                            <td className="pl-6 py-4">
+                              <input 
+                                className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-bold text-slate-800 placeholder:text-slate-200"
+                                placeholder="Décrivez le service ou l'article..."
+                                value={item.description}
+                                onChange={e => handleUpdateItem(idx, 'description', e.target.value)}
+                              />
+                            </td>
+                            <td className="px-4 py-4">
+                              <input 
+                                type="number"
+                                className="w-full bg-slate-100/50 group-hover:bg-white border-2 border-transparent focus:border-blue-500 rounded-lg px-2 py-1.5 text-sm font-black text-center text-slate-800 outline-none transition-all"
+                                value={item.quantity}
+                                onChange={e => handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-4 relative">
+                              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+                              <input 
+                                type="number"
+                                className="w-full bg-slate-100/50 group-hover:bg-white border-2 border-transparent focus:border-blue-500 rounded-lg pl-6 pr-2 py-1.5 text-sm font-black text-slate-800 outline-none transition-all"
+                                value={item.price}
+                                onChange={e => handleUpdateItem(idx, 'price', parseInt(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <span className="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm shadow-blue-500/5">
+                                ${(item.quantity * item.price).toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="pr-6 py-4 text-right">
+                              <button 
+                                disabled={(docModel.items || []).length <= 1}
+                                onClick={() => handleRemoveItem(idx)}
+                                className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-0"
+                              >
+                                <X size={18} />
+                              </button>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
                 <div className="space-y-3">
-                  {docModel.items.map((item, idx) => (
-                    <div key={idx} className="flex gap-3 group">
-                      <div className="flex-1">
-                        <input 
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                          placeholder="Description de l'article ou service"
-                          value={item.description}
-                          onChange={e => handleUpdateItem(idx, 'description', e.target.value)}
-                        />
-                      </div>
-                      <div className="w-24">
-                        <input 
-                          type="number"
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-center"
-                          placeholder="Qté"
-                          value={item.quantity}
-                          onChange={e => handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="w-32">
-                        <input 
-                          type="number"
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-                          placeholder="Prix Unit."
-                          value={item.price}
-                          onChange={e => handleUpdateItem(idx, 'price', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="w-32 flex items-center justify-between px-2 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800">
-                        <span>$</span>
-                        <span>{(item.quantity * item.price).toLocaleString()}</span>
-                      </div>
-                      {docModel.items.length > 1 && (
-                        <button 
-                          onClick={() => handleRemoveItem(idx)}
-                          className="p-3 text-slate-300 hover:text-red-500 transition-colors"
-                        >
-                          <X size={18} />
-                        </button>
-                      )}
+                  <div className="flex items-center space-x-2 ml-1">
+                    <ScrollText size={14} className="text-slate-400" />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes additionnelles & Conditions</label>
+                  </div>
+                  <textarea 
+                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none text-sm font-bold min-h-[140px] shadow-inner text-slate-700 leading-relaxed placeholder:text-slate-300"
+                    placeholder="Précisez ici les modalités de paiement, validité de l'offre ou un message de remerciement..."
+                    value={docModel.note}
+                    onChange={e => setDocModel({...docModel, note: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-slate-900 rounded-3xl p-8 text-white relative shadow-2xl shadow-slate-900/20 overflow-hidden transform hover:-translate-y-1 transition-transform">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/30 blur-[60px] -mr-24 -mt-24" />
+                    
+                    <div className="relative z-10 flex flex-col space-y-6">
+                       <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sous-total</span>
+                         <span className="text-xl font-black text-slate-300">
+                           ${(docModel.items || []).reduce((acc: number, item: any) => acc + (item.quantity * item.price), 0).toLocaleString()}
+                         </span>
+                       </div>
+                       
+                       <div className="flex flex-col space-y-2">
+                         <div className="flex justify-between items-baseline">
+                           <span className="text-[11px] font-black text-blue-400 uppercase tracking-[0.2em]">Montant Total</span>
+                           <div className="text-right">
+                             <div className="text-4xl font-black tracking-tighter text-white drop-shadow-sm">
+                               ${(docModel.items || []).reduce((acc: number, item: any) => acc + (item.quantity * item.price), 0).toLocaleString()}
+                             </div>
+                             <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider mt-1">Net à payer en USD</p>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       <button 
+                         onClick={handleDownload}
+                         className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-3"
+                       >
+                         <Download size={18} />
+                         <span>Valider et Imprimer</span>
+                       </button>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Total calculation */}
-              <div className="flex flex-col items-end pt-6 border-t border-slate-100 space-y-3">
-                <div className="flex items-center space-x-12">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sous-total</span>
-                  <span className="text-lg font-bold text-slate-600">
-                    ${docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-12">
-                  <span className="text-base font-black text-slate-800 uppercase tracking-tight">Total Final</span>
-                  <span className="text-3xl font-black text-blue-600 tracking-tighter">
-                    ${docModel.items.reduce((acc, item) => acc + (item.quantity * item.price), 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes Additionnelles</label>
-                <textarea 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[80px]"
-                  placeholder="Conditions de paiement, merci, etc..."
-                  value={docModel.note}
-                  onChange={e => setDocModel({...docModel, note: e.target.value})}
-                />
               </div>
             </div>
           </div>
