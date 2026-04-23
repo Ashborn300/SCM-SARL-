@@ -1019,79 +1019,108 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     </div>
   );
 
-  const renderSalaries = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-slate-900 p-8 rounded-xl text-white shadow-[0_10px_40px_-15px_rgba(15,23,42,0.3)] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] -mr-32 -mt-32 rounded-full" />
-        <div className="relative z-10 space-y-3">
-          <p className="text-blue-400 font-bold uppercase tracking-widest text-[10px]">Masse salariale totale dûe</p>
-          <h2 className="text-5xl font-black tracking-tighter">
-            ${(employees.reduce((acc, emp) => acc + emp.salaryTotal, 0)).toLocaleString()}.<span className="text-blue-400">00</span>
-          </h2>
-          <div className="flex items-center space-x-2 text-slate-400 text-xs">
-            <Users size={14} />
-            <span>Basé sur {employees.length} employés actifs ce mois</span>
-          </div>
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row gap-4 w-full md:w-auto">
-          <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[200px]">
-             <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Déjà Payé</p>
-             <p className="text-2xl font-bold text-emerald-400 tracking-tight">$8,250</p>
-          </div>
-          <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[200px]">
-             <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Reste à Payer</p>
-             <p className="text-2xl font-bold text-amber-400 tracking-tight">$6,250</p>
-          </div>
-        </div>
-      </div>
+  const renderSalaries = () => {
+    const totalDue = employees.reduce((acc, emp) => acc + (emp.salaryTotal || 0), 0);
+    const totalPaid = employees.reduce((acc, emp) => acc + (emp.salaryPaid || 0), 0);
+    const totalRemaining = totalDue - totalPaid;
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
-         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-           <h4 className="font-bold text-slate-800">Détails des Paies</h4>
-           <div className="relative">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-             <input className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500" placeholder="Chercher un employé..." />
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-slate-900 p-8 rounded-xl text-white shadow-[0_10px_40px_-15px_rgba(15,23,42,0.3)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] -mr-32 -mt-32 rounded-full" />
+          <div className="relative z-10 space-y-3">
+            <p className="text-blue-400 font-bold uppercase tracking-widest text-[10px]">Masse salariale totale dûe</p>
+            <h2 className="text-5xl font-black tracking-tighter">
+              ${totalDue.toLocaleString()}.<span className="text-blue-400">00</span>
+            </h2>
+            <div className="flex items-center space-x-2 text-slate-400 text-xs">
+              <Users size={14} />
+              <span>Basé sur {employees.length} employés actifs ce mois</span>
+            </div>
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[200px]">
+               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Déjà Payé</p>
+               <p className="text-2xl font-bold text-emerald-400 tracking-tight">${totalPaid.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[200px]">
+               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Reste à Payer</p>
+               <p className="text-2xl font-bold text-amber-400 tracking-tight">${totalRemaining.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+           <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+             <h4 className="font-bold text-slate-800">Détails des Paies</h4>
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+               <input className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500" placeholder="Chercher un employé..." />
+             </div>
            </div>
-         </div>
-         <div className="overflow-x-auto elegant-scrollbar">
-           <table className="w-full text-left border-collapse min-w-[700px]">
-           <thead>
-             <tr className="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
-               <th className="px-6 py-4">Employé</th>
-               <th className="px-6 py-4">Salaire Mensuel</th>
-                           <th className="px-6 py-4">Balance</th>
-               <th className="px-6 py-4">Action</th>
-             </tr>
-           </thead>
-           <tbody className="divide-y divide-slate-100">
-             {employees.map(emp => (
-               <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
-                 <td className="px-6 py-4 flex items-center space-x-3">
-                   <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-500 uppercase">{emp.fullName.substring(0,2)}</div>
-                   <div>
-                     <p className="text-sm font-bold text-slate-800">{emp.fullName}</p>
-                     <p className="text-[10px] text-slate-400 font-bold">{emp.position}</p>
-                   </div>
-                 </td>
-                 <td className="px-6 py-4 font-bold text-slate-700">${emp.salaryTotal.toLocaleString()}</td>
-                 <td className="px-6 py-4 text-emerald-600 font-bold">${emp.salaryPaid.toLocaleString()}</td>
-                 <td className="px-6 py-4 font-black text-red-500">${(emp.salaryTotal - emp.salaryPaid).toLocaleString()}</td>
-                 <td className="px-6 py-4">
-                   <button 
-                     className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-blue-700"
-                     onClick={() => updateEmployee(emp.id, { salaryPaid: emp.salaryTotal })}
-                   >
-                     Payer Reste
-                   </button>
-                 </td>
+           <div className="overflow-x-auto elegant-scrollbar">
+             <table className="w-full text-left border-collapse min-w-[700px]">
+             <thead>
+               <tr className="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
+                 <th className="px-6 py-4">Employé</th>
+                 <th className="px-6 py-4">Salaire Mensuel</th>
+                 <th className="px-6 py-4">Payé</th>
+                 <th className="px-6 py-4 text-red-500">Balance (Reste)</th>
+                 <th className="px-6 py-4">Action</th>
                </tr>
-             ))}
-           </tbody>
-         </table>
+             </thead>
+             <tbody className="divide-y divide-slate-100">
+               {employees.map(emp => (
+                 <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
+                   <td className="px-6 py-4 flex items-center space-x-3">
+                     <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-500 uppercase">{emp.fullName.substring(0,2)}</div>
+                     <div>
+                       <p className="text-sm font-bold text-slate-800">{emp.fullName}</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{emp.position}</p>
+                     </div>
+                   </td>
+                   <td className="px-6 py-4">
+                      <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 max-w-[120px]">
+                        <span className="text-slate-400 mr-1 font-bold">$</span>
+                        <input 
+                          type="number"
+                          className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-bold text-slate-700"
+                          value={emp.salaryTotal}
+                          onChange={(e) => updateEmployee(emp.id, { salaryTotal: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                   </td>
+                   <td className="px-6 py-4">
+                      <div className="flex items-center bg-emerald-50/50 border border-emerald-100 rounded-lg px-2 py-1 max-w-[120px]">
+                        <span className="text-emerald-400 mr-1 font-bold">$</span>
+                        <input 
+                          type="number"
+                          className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-bold text-emerald-600"
+                          value={emp.salaryPaid}
+                          onChange={(e) => updateEmployee(emp.id, { salaryPaid: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                   </td>
+                   <td className="px-6 py-4 font-black text-red-500 text-lg tracking-tighter">
+                     ${(emp.salaryTotal - emp.salaryPaid).toLocaleString()}
+                   </td>
+                   <td className="px-6 py-4">
+                     <button 
+                       className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                       onClick={() => updateEmployee(emp.id, { salaryPaid: emp.salaryTotal })}
+                     >
+                       Payer Reste
+                     </button>
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderDocs = () => (
     <div className="space-y-6">
