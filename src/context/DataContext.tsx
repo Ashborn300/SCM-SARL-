@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, 
-  doc, query, getDocs, writeBatch
+  doc, query, getDocs, writeBatch, setDoc
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
@@ -118,12 +118,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addEmployee = async (emp: Partial<Employee>) => {
-    const docRef = await addDoc(collection(db, 'employees'), emp);
-    await updateDoc(docRef, { id: docRef.id }); // Ensure ID is consistent
+    const id = emp.id || doc(collection(db, 'employees')).id;
+    await setDoc(doc(db, 'employees', id), { ...emp, id });
   };
 
-  const updateEmployee = async (id: string, emp: Partial<Employee>) => {
-    await updateDoc(doc(db, 'employees', id), emp);
+  const updateEmployee = async (oldId: string, emp: Partial<Employee>) => {
+    const newId = emp.id;
+    if (newId && newId !== oldId) {
+      // If ID changed, we must move the document
+      await setDoc(doc(db, 'employees', newId), { ...emp, id: newId });
+      await deleteDoc(doc(db, 'employees', oldId));
+    } else {
+      await updateDoc(doc(db, 'employees', oldId), emp);
+    }
   };
 
   const deleteEmployee = async (id: string) => {

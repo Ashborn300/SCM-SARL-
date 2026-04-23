@@ -2026,7 +2026,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: SCM-102"
                       value={newEmployee.matricule}
-                      onChange={e => setNewEmployee({...newEmployee, matricule: e.target.value})}
+                      onChange={e => setNewEmployee({...newEmployee, matricule: e.target.value.toUpperCase()})}
                     />
                   </div>
                 </div>
