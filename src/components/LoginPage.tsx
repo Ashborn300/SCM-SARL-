@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { HardHat, AlertCircle, User, Lock } from 'lucide-react';
 import { signInAnonymously } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { getDoc, doc, query, collection, where, getDocs, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
-const LoginPage: React.FC = () => {
+export const LoginPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuccess }) => {
   const [matricule, setMatricule] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,37 +18,84 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      // 1. Admin special check
-      if (matricule === 'SCM00123') {
+      const cleanMatricule = matricule.trim().toUpperCase();
+      
+      // Always sign in first so we are authenticated for Firestore checks
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+
+      // Helper to check a specific collection concurrently
+      const checkRole = async (colName: string) => {
+        let outputData = null;
+        try {
+          // Fire doc get and both queries all at once
+          const qId = query(collection(db, colName), where('id', '==', cleanMatricule));
+          const qMat = query(collection(db, colName), where('matricule', '==', cleanMatricule));
+          
+          const [docRefSnap, snapId, snapMat] = await Promise.all([
+            getDoc(doc(db, colName, cleanMatricule)),
+            getDocs(qId),
+            getDocs(qMat)
+          ]);
+          
+          if (docRefSnap.exists()) {
+            outputData = { id: docRefSnap.id, ...docRefSnap.data() };
+          } else if (!snapId.empty) {
+            outputData = { id: snapId.docs[0].id, ...snapId.docs[0].data() };
+          } else if (!snapMat.empty) {
+            outputData = { id: snapMat.docs[0].id, ...snapMat.docs[0].data() };
+          }
+        } catch (e) {
+          console.error(`Error checking ${colName}:`, e);
+        }
+        return outputData;
+      };
+
+      // Launch all 3 checks in parallel to massively speed up login ⚡️
+      let [adminData, empData, manData] = await Promise.all([
+        checkRole('admins'),
+        checkRole('employees'),
+        checkRole('managers')
+      ]);
+
+      // Bootstrap absolute default admin if it doesn't exist yet
+      if (!adminData && cleanMatricule === 'SCM00123') {
+        const defaultAdmin = {
+          id: 'SCM00123',
+          matricule: 'SCM00123',
+          name: 'Administrateur',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'admins', 'SCM00123'), defaultAdmin);
+        adminData = defaultAdmin;
+      }
+
+      if (adminData) {
         localStorage.setItem('scm_user_role', 'admin');
-        localStorage.setItem('scm_user_id', 'SCM00123');
-        await signInAnonymously(auth);
+        localStorage.setItem('scm_user_id', adminData.id);
+        if (onLoginSuccess) onLoginSuccess();
         return;
       }
 
-      // 2. Check in employees collection
-      const empQuery = query(collection(db, 'employees'), where('id', '==', matricule));
-      const empSnapshot = await getDocs(empQuery);
-
-      if (!empSnapshot.empty) {
+      if (empData) {
         localStorage.setItem('scm_user_role', 'employee');
-        localStorage.setItem('scm_user_id', matricule);
-        await signInAnonymously(auth);
+        localStorage.setItem('scm_user_id', empData.id);
+        if (onLoginSuccess) onLoginSuccess();
         return;
       }
 
-      // 3. Check in managers collection
-      const manQuery = query(collection(db, 'managers'), where('id', '==', matricule));
-      const manSnapshot = await getDocs(manQuery);
-
-      if (!manSnapshot.empty) {
+      if (manData) {
         localStorage.setItem('scm_user_role', 'manager');
-        localStorage.setItem('scm_user_id', matricule);
-        await signInAnonymously(auth);
+        localStorage.setItem('scm_user_id', manData.id);
+        if (onLoginSuccess) onLoginSuccess();
         return;
       }
 
-      setError("Matricule ou Identifiant non reconnu.");
+      setError("Matricule non reconnu dans le système.");
+      // Note: we stay signed in anonymously, but our local role/id aren't set
+      // so App.tsx will keep us on LoginPage.
     } catch (err: any) {
       setError("Connexion impossible. Vérifiez votre accès.");
       console.error(err);

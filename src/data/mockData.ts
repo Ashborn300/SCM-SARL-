@@ -119,10 +119,10 @@ export const MOCK_SITES: ConstructionSite[] = [
 ];
 
 export const MOCK_ATTENDANCE: AttendanceRecord[] = [
-  { id: 'att-1', date: '2024-04-20', siteId: 'SITE-001', employeeId: 'SCM-E001', present: true },
-  { id: 'att-2', date: '2024-04-20', siteId: 'SITE-001', employeeId: 'SCM-E003', present: true },
-  { id: 'att-3', date: '2024-04-20', siteId: 'SITE-002', employeeId: 'SCM-E002', present: true },
-  { id: 'att-4', date: '2024-04-21', siteId: 'SITE-001', employeeId: 'SCM-E001', present: true },
+  { id: 'att-1', date: '2024-04-20', siteId: 'SITE-001', employeeId: 'SCM-E001', status: 'present', present: true },
+  { id: 'att-2', date: '2024-04-20', siteId: 'SITE-001', employeeId: 'SCM-E003', status: 'present', present: true },
+  { id: 'att-3', date: '2024-04-20', siteId: 'SITE-002', employeeId: 'SCM-E002', status: 'present', present: true },
+  { id: 'att-4', date: '2024-04-21', siteId: 'SITE-001', employeeId: 'SCM-E001', status: 'present', present: true },
 ];
 
 export const MOCK_DOCS: Document[] = [

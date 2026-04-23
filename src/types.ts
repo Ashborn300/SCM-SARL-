@@ -55,8 +55,9 @@ export interface AttendanceRecord {
   date: string;
   siteId: string;
   employeeId: string;
-  present: boolean;
-  remark?: string;
+  status: 'present' | 'absent';
+  remarks?: string;
+  present?: boolean; // Kept for backwards compatibility
 }
 
 export interface SiteReport {

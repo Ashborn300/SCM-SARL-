@@ -50,7 +50,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubs = [];
 
       if (user) {
-        // ONLY start listeners if authenticated
+        const storedRole = localStorage.getItem('scm_user_role');
+        
+        // ONLY start listeners if authenticated AND has a role
+        // This prevents anonymous registration users from trying to read everything
+        if (!storedRole) {
+          setLoading(false);
+          return;
+        }
+
         const unsubEmployees = onSnapshot(collection(db, 'employees'), (snapshot) => {
           setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee)));
         });
@@ -69,7 +77,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const unsubDocuments = onSnapshot(collection(db, 'documents'), (snapshot) => {
           setDocuments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SCMDocument)));
-          setLoading(false);
         });
 
         unsubs = [unsubEmployees, unsubManagers, unsubSites, unsubAttendance, unsubDocuments];
@@ -77,25 +84,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Migration check
         const checkInitialLoad = async () => {
           try {
-            const snapshots = await Promise.all([
-              getDocs(collection(db, 'employees')),
-              getDocs(collection(db, 'managers')),
-              getDocs(collection(db, 'sites')),
-              getDocs(collection(db, 'attendance')),
-              getDocs(collection(db, 'documents'))
+            const fetchCollection = async (name: string) => {
+              try {
+                return await getDocs(collection(db, name));
+              } catch (e) {
+                console.warn(`Could not fetch ${name} collection:`, e);
+                return { empty: true, docs: [] };
+              }
+            };
+
+            const [empSnap, manSnap, siteSnap, attSnap, docSnap] = await Promise.all([
+              fetchCollection('employees'),
+              fetchCollection('managers'),
+              fetchCollection('sites'),
+              fetchCollection('attendance'),
+              fetchCollection('documents')
             ]);
             
-            const allEmpty = snapshots.every(s => s.empty);
+            const allEmpty = empSnap.empty && manSnap.empty && siteSnap.empty && attSnap.empty && docSnap.empty;
+            
             if (allEmpty) {
-              const response = await fetch('/db.json');
-              if (response.ok) {
-                const localData = await response.json();
-                await migrateFromLocalToFirebase(localData);
+              console.log('No data in Firebase. Checking for local data to migrate...');
+              try {
+                const response = await fetch('/db.json');
+                if (response.ok) {
+                  const localData = await response.json();
+                  await migrateFromLocalToFirebase(localData);
+                } else {
+                  console.warn('db.json not found, skipping migration.');
+                }
+              } catch (fetchError) {
+                console.warn('Could not fetch db.json for migration:', fetchError);
               }
+            } else {
+              // Populate state from initial snapshots to avoid race conditions with onSnapshot
+              setEmployees(empSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Employee)));
+              setManagers(manSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Manager)));
+              setSites(siteSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as ConstructionSite)));
+              setAttendance(attSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as AttendanceRecord)));
+              setDocuments(docSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as SCMDocument)));
             }
             setLoading(false);
           } catch (error) {
-            console.error('Error fetching initial Firebase data:', error);
+            console.error('Error in checkInitialLoad:', error);
             setLoading(false);
           }
         };

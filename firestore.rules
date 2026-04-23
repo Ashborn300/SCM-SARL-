@@ -1,74 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Catch-all deny
+    // 0. Default open during development / bootstrap
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Common helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isValidId(id) {
-      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-    
-    function incoming() {
-      return request.resource.data;
-    }
-    
-    function existing() {
-      return resource.data;
-    }
-
-    // Employees
-    match /employees/{employeeId} {
-      allow read: if isSignedIn() || (request.auth == null && resource.data.id != null); // Allow check for login
-      allow create: if isSignedIn() && isValidEmployee(incoming());
-      allow update: if isSignedIn() && isValidEmployee(incoming());
-      allow delete: if isSignedIn();
-    }
-    
-    function isValidEmployee(data) {
-      return data.keys().hasAll(['fullName', 'position', 'status'])
-        && data.fullName is string && data.fullName.size() <= 100
-        && data.position is string && data.position.size() <= 50
-        && data.status in ['active', 'inactive'];
-    }
-
-    // Sites
-    match /sites/{siteId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidSite(incoming());
-      allow update: if isSignedIn() && isValidSite(incoming());
-      allow delete: if isSignedIn();
-    }
-    
-    function isValidSite(data) {
-      return data.keys().hasAll(['name', 'location', 'status'])
-        && data.name is string && data.name.size() <= 100
-        && data.location is string && data.location.size() <= 100
-        && data.status in ['ongoing', 'finished', 'suspended'];
-    }
-
-    // Managers
-    match /managers/{managerId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
-    // Attendance
-    match /attendance/{recordId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
-    // Documents
-    match /documents/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

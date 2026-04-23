@@ -7,7 +7,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X,
   Camera, Upload, Wrench, Calculator, Receipt, ScrollText,
   Trash2, Edit, ExternalLink, Share2, GripVertical, CheckCircle, Circle,
-  ArrowLeft, MapPin, FileImage
+  ArrowLeft, MapPin, FileImage, UserPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -57,6 +57,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
   // Tools states
   const [selectedTool, setSelectedTool] = useState<any>('invoice');
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [showLinkToast, setShowLinkToast] = useState(false);
   const [isViewingSiteDetails, setIsViewingSiteDetails] = useState(false);
   const [docModel, setDocModel] = useState<any>({
     clientName: '',
@@ -125,12 +126,26 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     managerId: ''
   });
 
+  const [saving, setSaving] = useState(false);
+
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+
+    if (!newEmployee.fullName) {
+      alert("Le nom complet est obligatoire");
+      return;
+    }
+    if (!newEmployee.matricule) {
+      alert("Le numéro matricule est obligatoire pour la connexion de l'employé");
+      return;
+    }
+
+    setSaving(true);
     try {
       const payload = {
         ...newEmployee,
-        id: newEmployee.matricule, // Use matricule as ID
+        id: newEmployee.matricule || (editingEmployee ? editingEmployee.id : ''), 
         age: parseInt(newEmployee.age) || 0,
         salaryTotal: parseInt(newEmployee.salaryTotal) || 0,
         salaryPaid: editingEmployee ? editingEmployee.salaryPaid : 0,
@@ -162,8 +177,22 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
         photo: `https://picsum.photos/seed/${Math.random()}/200/200`,
         serviceCardPhoto: ''
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      alert("Erreur lors de l'enregistrement: " + (error.message || "Erreur inconnue"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteEmployee = async (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cet employé ? Cette action est irréversible.")) {
+      try {
+        await deleteEmployee(id);
+      } catch (error) {
+        console.error(error);
+        alert("Erreur lors de la suppression");
+      }
     }
   };
 
@@ -393,6 +422,18 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
             <span>Exporter Liste</span>
           </button>
           <button 
+            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-slate-800 transition font-bold text-sm shadow-sm"
+            onClick={() => {
+              const link = window.location.origin + '?register=true';
+              navigator.clipboard.writeText(link);
+              setShowLinkToast(true);
+              setTimeout(() => setShowLinkToast(false), 3000);
+            }}
+          >
+            <UserPlus size={18} />
+            <span>Lien Inscription</span>
+          </button>
+          <button 
             className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
             onClick={() => {
               setEditingEmployee(null);
@@ -400,7 +441,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                 fullName: '',
                 admissionDate: '',
                 birthDate: '',
-                matricule: `SCM-${Math.floor(1000 + Math.random() * 9000)}`,
+                matricule: '', // Start empty, Admin must choose
                 age: '',
                 gender: 'M',
                 address: '',
@@ -425,7 +466,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
         {employees.map(emp => (
           <div key={emp.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-md transition-all group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4">
-              <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600" onClick={() => deleteEmployee(emp.id)}>
+              <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600" onClick={() => handleDeleteEmployee(emp.id)}>
                 <X size={18} />
               </button>
             </div>
@@ -2035,7 +2076,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                    <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date d'admission</label>
                     <input 
-                      required
                       type="date"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       value={newEmployee.admissionDate}
@@ -2045,7 +2085,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date de naissance</label>
                     <input 
-                      required
                       type="date"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       value={newEmployee.birthDate}
@@ -2058,7 +2097,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Âge</label>
                     <input 
-                      required
                       type="number"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: 30"
@@ -2083,7 +2121,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                    <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poste</label>
                     <input 
-                      required
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: Maçon"
                       value={newEmployee.position}
@@ -2093,7 +2130,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Salaire Mensuel ($)</label>
                     <input 
-                      required
                       type="number"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: 1200"
@@ -2107,7 +2143,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Numéro de téléphone</label>
                     <input 
-                      required
                       type="tel"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: +243 ..."
@@ -2118,7 +2153,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse mail</label>
                     <input 
-                      required
                       type="email"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="Ex: jean.dupont@gmail.com"
@@ -2131,7 +2165,6 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse Physique</label>
                   <input 
-                    required
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     placeholder="Ex: Kinshasa, Gombe, Ave..."
                     value={newEmployee.address}
@@ -2153,16 +2186,25 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                 <div className="flex gap-3 pt-4">
                   <button 
                     type="button"
+                    disabled={saving}
                     onClick={() => setIsAddingEmployee(false)}
-                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
                   >
                     Annuler
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all"
+                    disabled={saving}
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center space-x-2 disabled:bg-blue-400"
                   >
-                    {editingEmployee ? 'Enregistrer' : 'Confirmer'}
+                    {saving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Enregistrement...</span>
+                      </>
+                    ) : (
+                      <span>{editingEmployee ? 'Enregistrer' : 'Confirmer'}</span>
+                    )}
                   </button>
                 </div>
               </form>
@@ -2286,6 +2328,20 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showLinkToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border border-slate-800"
+          >
+            <CheckCircle2 size={18} className="text-emerald-400" />
+            <span className="text-xs font-bold uppercase tracking-widest">Lien d'inscription copié !</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </Layout>

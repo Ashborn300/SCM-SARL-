@@ -7,80 +7,80 @@ import AdminDashboard from './components/AdminDashboard';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
 import SharedSiteView from './components/SharedSiteView';
+import PublicRegistrationForm from './components/PublicRegistrationForm';
 import { DataProvider, useData } from './context/DataContext';
 
 const MainApp: React.FC = () => {
   const { employees, managers, loading: dataLoading } = useData();
-  const [user, setUser] = useState<{ role: UserRole; id: string; details: any } | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [initLoading, setInitLoading] = useState(true);
+  const [authVersion, setAuthVersion] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        // ID-based role detection
-        const detectRole = () => {
-          const storedRole = localStorage.getItem('scm_user_role') as UserRole;
-          const storedId = localStorage.getItem('scm_user_id');
-
-          if (storedRole === 'admin' && storedId === 'SCM00123') {
-            return { role: 'admin' as UserRole, id: 'SCM00123', details: { name: 'Administrateur SCM' } };
-          }
-
-          // Important: only try to match employees/managers if data is loaded
-          if (!dataLoading) {
-            if (storedRole === 'employee' && storedId) {
-              const emp = employees.find(e => e.id === storedId);
-              if (emp) return { role: 'employee' as UserRole, id: emp.id, details: emp };
-            }
-
-            if (storedRole === 'manager' && storedId) {
-              const man = managers.find(m => m.id === storedId);
-              if (man) return { role: 'manager' as UserRole, id: man.id, details: man };
-            }
-            
-            // If data is loaded and we still have no match, sign out
-            signOut(auth);
-            return null;
-          }
-          
-          // Data still loading, don't sign out yet
-          return null;
-        };
-
-        const detected = detectRole();
-        if (detected) {
-          setUser(detected);
-        } else {
-          // If we have local storage but data is loading, don't clear user yet if it's admin
-          // Actually, we don't need to do anything here, detected will be null and setUser(null)
-          // except if it's admin it won't be null.
-          setUser(detected);
-        }
-      } else {
-        setUser(null);
-        localStorage.removeItem('scm_user_role');
-        localStorage.removeItem('scm_user_id');
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
       setInitLoading(false);
     });
 
     return () => unsubscribe();
-  }, [employees, managers, dataLoading]);
+  }, []);
+
+  const user = React.useMemo(() => {
+    if (!firebaseUser) return null;
+
+    const storedRole = localStorage.getItem('scm_user_role') as UserRole;
+    const storedId = localStorage.getItem('scm_user_id');
+
+    if (storedRole === 'admin' && storedId) {
+      return { role: 'admin' as UserRole, id: storedId, details: { name: 'Administrateur SCM' } };
+    }
+
+    if (!dataLoading) {
+      if (storedRole === 'employee' && storedId) {
+        const emp = employees.find(e => e.id === storedId);
+        if (emp) return { role: 'employee' as UserRole, id: emp.id, details: emp };
+      }
+      if (storedRole === 'manager' && storedId) {
+        const man = managers.find(m => m.id === storedId);
+        if (man) return { role: 'manager' as UserRole, id: man.id, details: man };
+      }
+    }
+    return null;
+  }, [firebaseUser, employees, managers, dataLoading, authVersion]);
+
+  // Handle invalid sessions
+  useEffect(() => {
+    if (!dataLoading && firebaseUser && !user && localStorage.getItem('scm_user_role')) {
+      const storedRole = localStorage.getItem('scm_user_role');
+      // If we have a role in storage but can't find a matching user after data is loaded,
+      // it means the session is invalid (e.g. employee was deleted or ID changed).
+      if (storedRole !== 'admin') {
+        signOut(auth);
+        localStorage.removeItem('scm_user_role');
+        localStorage.removeItem('scm_user_id');
+      }
+    }
+  }, [user, dataLoading, firebaseUser]);
 
   const handleLogout = async () => {
     localStorage.removeItem('scm_user_role');
     localStorage.removeItem('scm_user_id');
+    setAuthVersion(v => v + 1);
     await signOut(auth);
-    setUser(null);
   };
 
-  // Check for shared view
+  // Check for shared view or public registration
   const searchParams = new URLSearchParams(window.location.search);
   const sharedSiteId = searchParams.get('siteId');
   const isShared = searchParams.get('shared') === 'true';
+  const isRegistering = searchParams.get('register') === 'true';
 
   if (sharedSiteId && isShared) {
     return <SharedSiteView siteId={sharedSiteId} />;
+  }
+
+  if (isRegistering) {
+    return <PublicRegistrationForm />;
   }
 
   if (initLoading || (dataLoading && !user)) return (
@@ -90,8 +90,18 @@ const MainApp: React.FC = () => {
     </div>
   );
 
+  if (!user && !localStorage.getItem('scm_user_role')) {
+    return <LoginPage onLoginSuccess={() => setAuthVersion(v => v + 1)} />;
+  }
+
+  // If there's a user role but no user object yet, the data context is still busy downloading
   if (!user) {
-    return <LoginPage />;
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-blue-600 font-bold uppercase tracking-widest text-xs">Préparation de votre espace...</p>
+      </div>
+    );
   }
 
   return (
