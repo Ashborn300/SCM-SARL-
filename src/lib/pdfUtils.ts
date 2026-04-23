@@ -69,49 +69,78 @@ export const generateEmployeePDF = async (employee: any, siteName: string) => {
   doc.setLineWidth(1);
   doc.line(20, 60, 190, 60);
 
-  // Information Grid
+  // Information Grid - Two Column Layout
   let yPos = 80;
 
-  const addInfoRow = (label: string, value: string) => {
+  const addInfoField = (label: string, value: string, xPos: number) => {
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    doc.text(label.toUpperCase(), 20, yPos);
+    doc.text(label.toUpperCase(), xPos, yPos);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
-    doc.text(value || 'N/A', 20, yPos + 7);
-    
-    yPos += 20;
+    doc.text(value || 'N/A', xPos, yPos + 6);
   };
 
-  addInfoRow('Nom Complet', employee.fullName);
-  addInfoRow('Matricule', employee.id);
-  addInfoRow('Poste / Fonction', employee.position);
-  addInfoRow('Âge', `${employee.age} ans`);
-  addInfoRow('Lieu de Résidence', employee.address);
-  addInfoRow('Chantier Assigné', siteName);
+  addInfoField('Nom Complet', employee.fullName, 20);
+  addInfoField('Matricule', employee.id, 110);
   
+  yPos += 18;
+  addInfoField('Genre', employee.gender === 'M' ? 'Masculin' : 'Féminin', 20);
+  addInfoField('Date de Naissance', employee.birthDate, 110);
+
+  yPos += 18;
+  addInfoField('Âge', `${employee.age} ans`, 20);
+  addInfoField('Poste / Fonction', employee.position, 110);
+
+  yPos += 18;
+  addInfoField('Date d\'Admission', employee.admissionDate, 20);
+  addInfoField('Téléphone', employee.phone, 110);
+
+  yPos += 18;
+  addInfoField('Adresse Email', employee.email, 20);
+  addInfoField('Lieu de Résidence', employee.address, 110);
+
+  yPos += 18;
+  addInfoField('Chantier Assigné', siteName, 20);
+  
+  // Service Card Photo if exists
+  if (employee.serviceCardPhoto) {
+     yPos += 20;
+     doc.setFont('helvetica', 'bold');
+     doc.setFontSize(8);
+     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+     doc.text('APERÇU CARTE DE SERVICE', 20, yPos);
+     try {
+       let format = 'JPEG';
+       if (employee.serviceCardPhoto.includes('image/png')) format = 'PNG';
+       doc.addImage(employee.serviceCardPhoto, format, 20, yPos + 4, 60, 35);
+     } catch (e) {
+       console.warn('Could not add card image to PDF', e);
+     }
+  }
+
   // Financial Section
-  yPos += 10;
+  yPos = 220;
   doc.setFillColor(241, 245, 249); // slate-100
   doc.roundedRect(20, yPos, 170, 35, 3, 3, 'F');
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
-  doc.text('Situation Salariale', 30, yPos + 12);
+  doc.text('Situation Salariale', 30, yPos + 10);
   
-  doc.setFontSize(10);
-  doc.text('Salaire de Base:', 30, yPos + 22);
+  doc.setFontSize(9);
+  doc.text('Salaire de Base:', 30, yPos + 20);
   doc.setFont('helvetica', 'normal');
-  doc.text(`$${employee.salaryTotal.toLocaleString()}`, 80, yPos + 22);
+  doc.text(`$${employee.salaryTotal.toLocaleString()}`, 70, yPos + 20);
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Déjà Payé:', 120, yPos + 22);
+  doc.text('Déjà Payé:', 110, yPos + 20);
   doc.setFont('helvetica', 'normal');
-  doc.text(`$${employee.salaryPaid.toLocaleString()}`, 150, yPos + 22);
+  doc.text(`$${employee.salaryPaid.toLocaleString()}`, 140, yPos + 20);
 
   // Footer
   doc.setFontSize(8);

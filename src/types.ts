@@ -4,10 +4,15 @@ export interface Employee {
   id: string; // Matricule
   name: string;
   fullName: string;
+  admissionDate: string;
+  birthDate: string;
   age: number;
   address: string;
   gender: 'M' | 'F';
+  phone: string;
+  email: string;
   photo: string;
+  serviceCardPhoto: string;
   position: string;
   salaryTotal: number;
   salaryPaid: number;

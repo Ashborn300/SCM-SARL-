@@ -7,7 +7,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X,
   Camera, Upload, Wrench, Calculator, Receipt, ScrollText,
   Trash2, Edit, ExternalLink, Share2, GripVertical, CheckCircle, Circle,
-  ArrowLeft, MapPin
+  ArrowLeft, MapPin, FileImage
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -51,6 +51,7 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [editingSite, setEditingSite] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const serviceCardPhotoInputRef = useRef<HTMLInputElement>(null);
   const sitePhotoInputRef = useRef<HTMLInputElement>(null);
 
   // Tools states
@@ -85,15 +86,33 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     }
   };
 
+  const handleServiceCardPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewEmployee({ ...newEmployee, serviceCardPhoto: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Form states for adding
   const [newEmployee, setNewEmployee] = useState({
     fullName: '',
-    position: '',
+    admissionDate: '',
+    birthDate: '',
+    matricule: '',
     age: '',
+    gender: 'M',
     address: '',
+    phone: '',
+    email: '',
+    position: '',
     salaryTotal: '',
     assignedSiteId: '',
-    photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+    photo: `https://picsum.photos/seed/${Math.random()}/200/200`,
+    serviceCardPhoto: ''
   });
 
   const [newSite, setNewSite] = useState({
@@ -111,11 +130,11 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
     try {
       const payload = {
         ...newEmployee,
+        id: newEmployee.matricule, // Use matricule as ID
         age: parseInt(newEmployee.age) || 0,
         salaryTotal: parseInt(newEmployee.salaryTotal) || 0,
         salaryPaid: editingEmployee ? editingEmployee.salaryPaid : 0,
         status: editingEmployee ? editingEmployee.status : 'active',
-        gender: editingEmployee ? editingEmployee.gender : 'M',
         name: newEmployee.fullName.split(' ')[0]
       };
 
@@ -129,12 +148,19 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
       setEditingEmployee(null);
       setNewEmployee({
         fullName: '',
-        position: '',
+        admissionDate: '',
+        birthDate: '',
+        matricule: '',
         age: '',
+        gender: 'M',
         address: '',
+        phone: '',
+        email: '',
+        position: '',
         salaryTotal: '',
         assignedSiteId: '',
-        photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+        photo: `https://picsum.photos/seed/${Math.random()}/200/200`,
+        serviceCardPhoto: ''
       });
     } catch (error) {
       console.error(error);
@@ -365,12 +391,19 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
               setEditingEmployee(null);
               setNewEmployee({
                 fullName: '',
-                position: '',
+                admissionDate: '',
+                birthDate: '',
+                matricule: `SCM-${Math.floor(1000 + Math.random() * 9000)}`,
                 age: '',
+                gender: 'M',
                 address: '',
+                phone: '',
+                email: '',
+                position: '',
                 salaryTotal: '',
                 assignedSiteId: '',
-                photo: `https://picsum.photos/seed/${Math.random()}/200/200`
+                photo: `https://picsum.photos/seed/${Math.random()}/200/200`,
+                serviceCardPhoto: ''
               });
               setIsAddingEmployee(true);
             }}
@@ -435,12 +468,19 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                     setEditingEmployee(emp);
                     setNewEmployee({
                       fullName: emp.fullName,
-                      position: emp.position,
+                      admissionDate: emp.admissionDate || '',
+                      birthDate: emp.birthDate || '',
+                      matricule: emp.id,
                       age: emp.age.toString(),
+                      gender: emp.gender || 'M',
                       address: emp.address,
+                      phone: emp.phone || '',
+                      email: emp.email || '',
+                      position: emp.position,
                       salaryTotal: emp.salaryTotal.toString(),
                       assignedSiteId: emp.assignedSiteId || '',
-                      photo: emp.photo
+                      photo: emp.photo,
+                      serviceCardPhoto: emp.serviceCardPhoto || ''
                     });
                     setIsAddingEmployee(true);
                   }}
@@ -1885,36 +1925,80 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                   </button>
                 </div>
               </div>
-              <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
-                <div className="flex flex-col items-center mb-6">
-                  <div className="relative group">
-                    <img 
-                      src={newEmployee.photo} 
-                      className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm transition group-hover:opacity-75" 
-                      referrerPolicy="no-referrer"
-                    />
+              <form onSubmit={handleAddEmployee} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto elegant-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                  {/* Profile Photo */}
+                  <div className="flex flex-col items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center w-full">Photo de Profil</label>
+                    <div className="relative group">
+                      <img 
+                        src={newEmployee.photo} 
+                        className="w-28 h-28 rounded-2xl object-cover border-2 border-slate-200 shadow-sm transition group-hover:opacity-75" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-2xl text-white"
+                      >
+                        <Camera size={24} />
+                      </button>
+                      <input 
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                      />
+                    </div>
                     <button 
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-2xl text-white"
+                      className="mt-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline"
                     >
-                      <Camera size={24} />
+                      Importer Photo
                     </button>
-                    <input 
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                    />
                   </div>
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="mt-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline"
-                  >
-                    Changer la photo
-                  </button>
+
+                  {/* Service Card Photo */}
+                  <div className="flex flex-col items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center w-full">Carte de Service</label>
+                    <div className="relative group">
+                      {newEmployee.serviceCardPhoto ? (
+                        <img 
+                          src={newEmployee.serviceCardPhoto} 
+                          className="w-28 h-28 rounded-2xl object-cover border-2 border-slate-200 shadow-sm transition group-hover:opacity-75" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-slate-100 transition-colors">
+                           <FileImage size={24} className="mb-1" />
+                           <span className="text-[8px] font-bold uppercase">Aucune Photo</span>
+                        </div>
+                      )}
+                      <button 
+                        type="button"
+                        onClick={() => serviceCardPhotoInputRef.current?.click()}
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-2xl text-white"
+                      >
+                        <Camera size={24} />
+                      </button>
+                      <input 
+                        type="file"
+                        ref={serviceCardPhotoInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleServiceCardPhotoUpload}
+                      />
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => serviceCardPhotoInputRef.current?.click()}
+                      className="mt-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline"
+                    >
+                      Importer Carte
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1929,16 +2013,40 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poste</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Numéro Matricule</label>
                     <input 
                       required
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                      placeholder="Ex: Maçon"
-                      value={newEmployee.position}
-                      onChange={e => setNewEmployee({...newEmployee, position: e.target.value})}
+                      placeholder="Ex: SCM-102"
+                      value={newEmployee.matricule}
+                      onChange={e => setNewEmployee({...newEmployee, matricule: e.target.value})}
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date d'admission</label>
+                    <input 
+                      required
+                      type="date"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      value={newEmployee.admissionDate}
+                      onChange={e => setNewEmployee({...newEmployee, admissionDate: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date de naissance</label>
+                    <input 
+                      required
+                      type="date"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      value={newEmployee.birthDate}
+                      onChange={e => setNewEmployee({...newEmployee, birthDate: e.target.value})}
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Âge</label>
@@ -1949,6 +2057,30 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                       placeholder="Ex: 30"
                       value={newEmployee.age}
                       onChange={e => setNewEmployee({...newEmployee, age: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Genre</label>
+                    <select 
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      value={newEmployee.gender}
+                      onChange={e => setNewEmployee({...newEmployee, gender: e.target.value as 'M'|'F'})}
+                    >
+                      <option value="M">Masculin</option>
+                      <option value="F">Féminin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Poste</label>
+                    <input 
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: Maçon"
+                      value={newEmployee.position}
+                      onChange={e => setNewEmployee({...newEmployee, position: e.target.value})}
                     />
                   </div>
                   <div className="space-y-1">
@@ -1963,16 +2095,43 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Numéro de téléphone</label>
+                    <input 
+                      required
+                      type="tel"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: +243 ..."
+                      value={newEmployee.phone}
+                      onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse mail</label>
+                    <input 
+                      required
+                      type="email"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="Ex: jean.dupont@gmail.com"
+                      value={newEmployee.email}
+                      onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse Physique</label>
                   <input 
                     required
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                    placeholder="Ex: Kinshasa, Gombe"
+                    placeholder="Ex: Kinshasa, Gombe, Ave..."
                     value={newEmployee.address}
                     onChange={e => setNewEmployee({...newEmployee, address: e.target.value})}
                   />
                 </div>
+
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assigner à un Chantier</label>
                   <select 
