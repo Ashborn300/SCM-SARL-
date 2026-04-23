@@ -16,7 +16,7 @@ import {
   BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import { useData } from '../context/DataContext';
-import { generateEmployeePDF } from '../lib/pdfUtils';
+import { generateEmployeePDF, generateEmployeeListPDF } from '../lib/pdfUtils';
 import { generateDocumentPDF } from '../lib/documentUtils';
 
 const StatCard = ({ title, value, trend, trendColor, subValue, progress }: any) => (
@@ -384,6 +384,13 @@ const AdminDashboard: React.FC<{ user: any; onLogout: () => void }> = ({ user, o
           <button className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl hover:bg-slate-50 transition font-bold text-sm shadow-sm">
             <Filter size={18} />
             <span>Filtres</span>
+          </button>
+          <button 
+            className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition font-bold text-sm shadow-sm"
+            onClick={() => generateEmployeeListPDF(employees)}
+          >
+            <Download size={18} />
+            <span>Exporter Liste</span>
           </button>
           <button 
             className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-bold text-sm shadow-sm"
