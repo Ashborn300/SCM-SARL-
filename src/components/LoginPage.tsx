@@ -4,11 +4,13 @@ import { HardHat, AlertCircle, User, Lock } from 'lucide-react';
 import { signInAnonymously } from 'firebase/auth';
 import { getDoc, doc, query, collection, where, getDocs, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { useData } from '../context/DataContext';
 
 export const LoginPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuccess }) => {
   const [matricule, setMatricule] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { triggerDataLoad } = useData();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +77,7 @@ export const LoginPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSu
       if (adminData) {
         localStorage.setItem('scm_user_role', 'admin');
         localStorage.setItem('scm_user_id', adminData.id);
+        triggerDataLoad();
         if (onLoginSuccess) onLoginSuccess();
         return;
       }
@@ -82,6 +85,7 @@ export const LoginPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSu
       if (empData) {
         localStorage.setItem('scm_user_role', 'employee');
         localStorage.setItem('scm_user_id', empData.id);
+        triggerDataLoad();
         if (onLoginSuccess) onLoginSuccess();
         return;
       }
@@ -89,6 +93,7 @@ export const LoginPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSu
       if (manData) {
         localStorage.setItem('scm_user_role', 'manager');
         localStorage.setItem('scm_user_id', manData.id);
+        triggerDataLoad();
         if (onLoginSuccess) onLoginSuccess();
         return;
       }

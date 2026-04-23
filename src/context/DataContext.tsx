@@ -29,6 +29,7 @@ interface DataContextType {
   deleteDocument: (id: string) => Promise<void>;
   clearDocumentsHistory: (type: string) => Promise<void>;
   saveAttendanceBatch: (records: Partial<AttendanceRecord>[]) => Promise<void>;
+  triggerDataLoad: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -41,10 +42,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [documents, setDocuments] = useState<SCMDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
+  let triggerDataLoad = () => {};
+
   useEffect(() => {
     let unsubs: (() => void)[] = [];
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const loadData = (user: any) => {
       // Clean up previous listeners if any
       unsubs.forEach(unsub => unsub());
       unsubs = [];
@@ -58,6 +61,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           return;
         }
+
+        setLoading(true);
 
         const unsubEmployees = onSnapshot(collection(db, 'employees'), (snapshot) => {
           setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee)));
@@ -140,11 +145,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDocuments([]);
         setLoading(false);
       }
-    });
+    };
+
+    const unsubscribeAuth = onAuthStateChanged(auth, loadData);
+
+    const forceLoad = () => {
+      if (auth.currentUser) {
+        loadData(auth.currentUser);
+      }
+    };
+    
+    window.addEventListener('scm-login-success', forceLoad);
 
     return () => {
       unsubscribeAuth();
       unsubs.forEach(unsub => unsub());
+      window.removeEventListener('scm-login-success', forceLoad);
     };
   }, []);
 
@@ -189,6 +205,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteDocument = async (id: string) => {
     await deleteDoc(doc(db, 'documents', id));
   };
+  
+  triggerDataLoad = () => {
+    window.dispatchEvent(new Event('scm-login-success'));
+  };
 
   const clearDocumentsHistory = async (type: string = 'all') => {
     const toolTypes = ['invoice', 'quote', 'receipt'];
@@ -221,7 +241,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       employees, managers, sites, attendance, documents, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addSite, updateSite, deleteSite,
-      addDocument, deleteDocument, clearDocumentsHistory, saveAttendanceBatch
+      addDocument, deleteDocument, clearDocumentsHistory, saveAttendanceBatch,
+      triggerDataLoad
     }}>
       {children}
     </DataContext.Provider>
